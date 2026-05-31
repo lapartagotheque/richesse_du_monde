@@ -1180,9 +1180,10 @@ function MyTitles({ titles, getRoyalties, getTotalPercentage }) {
   const byProd = {}
   titles.forEach(t => { if (!byProd[t.production]) byProd[t.production] = []; byProd[t.production].push(t) })
   if (!Object.keys(byProd).length) return <div style={{ color:'#555', textAlign:'center', padding:'12px 0', fontSize:'12px' }}>Aucun titre possédé</div>
+  const sortedEntries = Object.entries(byProd).sort(([,a],[,b]) => b.reduce((s,t)=>s+t.percentage,0) - a.reduce((s,t)=>s+t.percentage,0))
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-      {Object.entries(byProd).map(([prod, ts]) => {
+      {sortedEntries.map(([prod, ts]) => {
         const pct = getTotalPercentage(prod)
         const royalties = getRoyalties(prod)
         const pctColor = pct >= 70?'#27ae60':pct >= 50?'#f39c12':pct >= 30?'#e67e22':'#e74c3c'
