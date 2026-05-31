@@ -830,20 +830,20 @@ export default function GamePage() {
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
                   <h3 style={{ color:'#c8962a', margin:0, fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>📋 RESSOURCES</h3>
                   <select
-                    value={viewResourcesPlayerId || user?.id || ''}
+                    value={String(viewResourcesPlayerId ?? user?.id ?? '')}
                     onChange={e => setViewResourcesPlayerId(e.target.value)}
                     style={{ background:'#1a0a00', border:'1px solid #c8962a55', borderRadius:'4px', color:'#c8962a', fontSize:'11px', padding:'2px 6px', cursor:'pointer' }}
                   >
                     {players.filter(p => p.user_id).map(p => (
-                      <option key={p.user_id} value={p.user_id}>
-                        {p.users?.username || p.user_id}{p.user_id === user?.id ? ' (moi)' : ''}
+                      <option key={p.user_id} value={String(p.user_id)}>
+                        {p.users?.username || p.user_id}{String(p.user_id) === String(user?.id) ? ' (moi)' : ''}
                       </option>
                     ))}
                   </select>
                 </div>
                 {(() => {
-                  const vid = viewResourcesPlayerId || user?.id
-                  const vTitles = titles.filter(t => t.user_id === vid)
+                  const vid = String(viewResourcesPlayerId ?? user?.id ?? '')
+                  const vTitles = titles.filter(t => String(t.user_id) === vid)
                   const vGetPct = prod => vTitles.filter(t => t.production === prod).reduce((s, t) => s + t.percentage, 0)
                   const vGetRoyalties = prod => getRoyaltyAmount(prod, vGetPct(prod))
                   return <MyTitles titles={vTitles} getRoyalties={vGetRoyalties} getTotalPercentage={vGetPct}/>
