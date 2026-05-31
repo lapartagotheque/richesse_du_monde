@@ -1185,12 +1185,15 @@ function MyTitles({ titles, getRoyalties, getTotalPercentage }) {
             </div>
             {isOpen && (
               <div style={{ borderTop:'1px solid #2a1a00', padding:'6px 10px', display:'flex', flexDirection:'column', gap:'4px' }}>
-                {ts.map((t, i) => (
-                  <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <span style={{ color:'#ccc', fontSize:'10px' }}>{t.region}</span>
-                    <span style={{ color:pctColor, fontSize:'10px', fontWeight:'bold' }}>{t.percentage}%</span>
-                  </div>
-                ))}
+                {ts.map((t, i) => {
+                  const caseLabel = AVAILABLE_TITLES.find(a => a.production === t.production && a.region === t.region)?.country || t.region
+                  return (
+                    <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ color:'#ccc', fontSize:'10px' }}>{caseLabel}</span>
+                      <span style={{ color:pctColor, fontSize:'10px', fontWeight:'bold' }}>{t.percentage}%</span>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
