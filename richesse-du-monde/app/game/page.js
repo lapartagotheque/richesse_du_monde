@@ -505,7 +505,7 @@ export default function GamePage() {
     }
     if (landedCase.type === '500k') lines.push(`Vous recevez ${formatMoney(total * 500000)} de la banque !`)
     if (landedCase.type === 'joker') lines.push('Vous pouvez acheter un Joker pour 3 000 000 F.')
-    if (landedCase.type === 'encheres') lines.push(newLaps > 0 ? `Dé rouge : ${dr} — mise ${dr} titre(s) aux enchères.` : 'Enchères actives après le 1er tour complet.')
+    if (landedCase.type === 'encheres') lines.push('Case neutre — aucun effet.')
 
     // Animation pion case par case
     setAnimPositions(prev => ({ ...prev, [user.id]: oldPos }))
@@ -529,7 +529,7 @@ export default function GamePage() {
     await loadGame(game.id)
   }
 
-  async function confirmPendingAction() {
+  async function confirmPendingAction(useJoker = false) {
     const pa = game?.game_state?.pending_action
     if (!pa || pa.player_id !== user.id) return
     const { data: d } = pa
@@ -549,10 +549,15 @@ export default function GamePage() {
 
     if (d.royaltyPayments?.length > 0) {
       for (const r of d.royaltyPayments) {
-        myMoney = Math.max(0, myMoney - r.amount)
+        const amount = useJoker ? Math.floor(r.amount / 2) : r.amount
+        myMoney = Math.max(0, myMoney - amount)
         const creditor = freshPlayers?.find(p => p.id === r.to_id)
-        if (creditor) await supabase.from('game_players').update({ money: creditor.money + r.amount }).eq('id', r.to_id)
-        await addLog(`paie ${formatMoney(r.amount)} de royalties à ${r.to_name} (${r.resource})`, r.amount)
+        if (creditor) await supabase.from('game_players').update({ money: creditor.money + amount }).eq('id', r.to_id)
+        await addLog(`paie ${formatMoney(amount)} de royalties à ${r.to_name} (${r.resource})${useJoker ? ' 🃏 Joker' : ''}`, amount)
+      }
+      if (useJoker) {
+        await supabase.from('game_players').update({ has_joker: false }).eq('id', freshMe.id)
+        await addLog('a utilisé son Joker — royalties réduites de moitié', 0)
       }
     }
 
@@ -583,8 +588,6 @@ export default function GamePage() {
       case 'choix':  nextModal = { type: 'buy', data: { cas: d.cas, laps: d.newLaps } }; break
       case 'joker':  nextModal = { type: 'joker', data: {} }; break
       case 'encheres':
-        if (d.newLaps > 0) nextModal = { type: 'encheres', data: { diceRed: d.diceRed } }
-        else setMessage("Les enchères ne s'appliquent qu'après un tour complet")
         break
     }
 
@@ -877,6 +880,7 @@ export default function GamePage() {
         pendingAction={game?.game_state?.pending_action}
         currentUserId={user?.id}
         onConfirm={confirmPendingAction}
+        hasJoker={myPlayer?.has_joker}
       />
 
       {/* MODALS */}
@@ -898,10 +902,12 @@ export default function GamePage() {
 // ============================================================
 // OVERLAY
 // ============================================================
-function PendingActionOverlay({ pendingAction, currentUserId, onConfirm }) {
+function PendingActionOverlay({ pendingAction, currentUserId, onConfirm, hasJoker }) {
+  const [useJoker, setUseJoker] = useState(false)
   if (!pendingAction) return null
   const isMyAction = pendingAction.player_id === currentUserId
   const color = PLAYER_COLORS[pendingAction.player_color] || '#c8962a'
+  const hasRoyalties = pendingAction.data?.royaltyPayments?.length > 0
   return (
     <div style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
       <div style={{ background:'#1a0a00', border:`2px solid ${color}`, borderRadius:'16px', padding:'32px 36px', maxWidth:'540px', width:'100%', textAlign:'center', boxShadow:`0 0 40px ${color}44` }}>
@@ -914,8 +920,14 @@ function PendingActionOverlay({ pendingAction, currentUserId, onConfirm }) {
             <p key={i} style={{ margin:0, color:i===0?'white':'#c8962a', fontSize:i===0?'17px':'15px', fontWeight:i===0?700:400, lineHeight:1.4, borderTop:i>0?'1px solid #2a1a00':'none', paddingTop:i>0?'10px':0 }}>{line}</p>
           ))}
         </div>
+        {isMyAction && hasJoker && hasRoyalties && (
+          <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'20px', cursor:'pointer', color:'#9b59b6', fontSize:'15px', fontWeight:'600' }}>
+            <input type="checkbox" checked={useJoker} onChange={e => setUseJoker(e.target.checked)} style={{ width:18, height:18, cursor:'pointer' }} />
+            🃏 Utiliser mon Joker (payer moitié des royalties)
+          </label>
+        )}
         {isMyAction ? (
-          <button onClick={onConfirm} style={{ padding:'12px 48px', background:color, border:'none', borderRadius:'10px', color:'white', fontSize:'18px', fontWeight:700, fontFamily:"'Oswald',sans-serif", cursor:'pointer' }}>OK</button>
+          <button onClick={() => onConfirm(useJoker)} style={{ padding:'12px 48px', background:color, border:'none', borderRadius:'10px', color:'white', fontSize:'18px', fontWeight:700, fontFamily:"'Oswald',sans-serif", cursor:'pointer' }}>OK</button>
         ) : (
           <p style={{ color:'#555', fontSize:'15px', margin:0 }}>En attente de <strong style={{ color }}>{pendingAction.player_name}</strong>...</p>
         )}
