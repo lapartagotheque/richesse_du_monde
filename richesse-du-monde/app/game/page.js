@@ -885,7 +885,7 @@ export default function GamePage() {
 
       {/* MODALS */}
       {modal && (
-        <Modal modal={modal} myPlayer={myPlayer} titles={titles} user={user}
+        <Modal modal={modal} myPlayer={myPlayer} titles={titles} players={players} user={user}
           onBuy={buyTitles} onActualite={handleActualite} onJoker={buyJoker}
           onClose={() => { setModal(null); nextTurn() }}
           formatMoney={formatMoney}
@@ -1313,11 +1313,16 @@ const AVAILABLE_TITLES = [
   {production:'Riz',                   region:'Indonésie',          percentage:10, price:500000,  country:'Indonésie'},
 ]
 
-function Modal({ modal, myPlayer, titles, user, onBuy, onActualite, onJoker, onClose, formatMoney }) {
+function Modal({ modal, myPlayer, titles, players, user, onBuy, onActualite, onJoker, onClose, formatMoney }) {
   const [selected, setSelected] = useState([])
+  const [viewPlayerId, setViewPlayerId] = useState(user?.id)
   const myTitles = titles.filter(t => t.user_id === user?.id)
   const totalSelected = selected.reduce((s, t) => s + t.price, 0)
   const canAfford = myPlayer && totalSelected <= myPlayer.money
+
+  const viewTitles = titles.filter(t => t.user_id === viewPlayerId)
+  const viewByProd = {}
+  viewTitles.forEach(t => { viewByProd[t.production] = (viewByProd[t.production] || 0) + t.percentage })
 
   function toggleTitle(t) {
     const key = t.production + t.region
@@ -1346,26 +1351,71 @@ function Modal({ modal, myPlayer, titles, user, onBuy, onActualite, onJoker, onC
 
   if (modal.type === 'buy') return (
     <div className="modal-overlay">
-      <div className="modal-box">
+      <div className="modal-box" style={{ maxWidth:'780px' }}>
         <h3 style={{ color:'#c8962a', margin:'0 0 4px', fontFamily:"'Oswald',sans-serif" }}>Titres d'exploitation — {modal.data.cas.label}</h3>
         <p style={{ color:'#aaa', fontSize:'12px', margin:'0 0 12px' }}>Choisissez jusqu'à 6 titres</p>
         <p style={{ color:'#27ae60', margin:'0 0 16px', fontSize:'14px' }}>Votre argent : {formatMoney(myPlayer?.money)}</p>
-        {availableForCase.length === 0
-          ? <p style={{ color:'#e74c3c' }}>Aucun titre disponible</p>
-          : <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'20px', maxHeight:'340px', overflowY:'auto' }}>
-              {availableForCase.map((t, i) => {
-                const isSelected = !!selected.find(s => s.production + s.region === t.production + t.region)
-                return (
-                  <div key={i} onClick={() => toggleTitle(t)} style={{ padding:'10px', background:isSelected?'rgba(200,150,42,0.2)':'rgba(255,255,255,0.04)', border:`1px solid ${isSelected?'#c8962a':'#333'}`, borderRadius:'8px', cursor:'pointer', fontSize:'12px' }}>
-                    <div style={{ color:'#c8962a', fontWeight:'bold' }}>{t.production}</div>
-                    <div style={{ color:'#aaa' }}>{t.region} — {t.percentage}%</div>
-                    <div style={{ color:'#27ae60' }}>{formatMoney(t.price)}</div>
-                  </div>
-                )
-              })}
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 280px', gap:'16px', alignItems:'start' }}>
+          {/* Titres disponibles */}
+          <div>
+            {availableForCase.length === 0
+              ? <p style={{ color:'#e74c3c' }}>Aucun titre disponible</p>
+              : <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', maxHeight:'320px', overflowY:'auto' }}>
+                  {availableForCase.map((t, i) => {
+                    const isSelected = !!selected.find(s => s.production + s.region === t.production + t.region)
+                    return (
+                      <div key={i} onClick={() => toggleTitle(t)} style={{ padding:'10px', background:isSelected?'rgba(200,150,42,0.2)':'rgba(255,255,255,0.04)', border:`1px solid ${isSelected?'#c8962a':'#333'}`, borderRadius:'8px', cursor:'pointer', fontSize:'12px' }}>
+                        <div style={{ color:'#c8962a', fontWeight:'bold' }}>{t.production}</div>
+                        <div style={{ color:'#aaa' }}>{t.region} — {t.percentage}%</div>
+                        <div style={{ color:'#27ae60' }}>{formatMoney(t.price)}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+            }
+          </div>
+
+          {/* Panneau ressources joueur */}
+          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid #2a1a00', borderRadius:'10px', padding:'10px' }}>
+            <div style={{ marginBottom:'8px' }}>
+              <select
+                value={viewPlayerId}
+                onChange={e => setViewPlayerId(e.target.value)}
+                style={{ width:'100%', padding:'5px 8px', background:'#1a0a00', border:'1px solid #555', borderRadius:'6px', color:'white', fontSize:'13px', cursor:'pointer' }}
+              >
+                {(players || []).map(p => (
+                  <option key={p.user_id} value={p.user_id}>
+                    {p.users?.username}{p.user_id === user?.id ? ' (moi)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
-        }
-        <div style={{ borderTop:'1px solid #333', paddingTop:'16px', display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap' }}>
+            <div style={{ maxHeight:'300px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'4px' }}>
+              {Object.keys(viewByProd).length === 0
+                ? <p style={{ color:'#555', fontSize:'12px', textAlign:'center', margin:'20px 0' }}>Aucune ressource</p>
+                : Object.entries(viewByProd).sort(([a],[b]) => a.localeCompare(b)).map(([prod, pct]) => {
+                    const royalty = getRoyaltyAmount(prod, pct)
+                    const pctColor = pct >= 70 ? '#27ae60' : pct >= 50 ? '#f39c12' : pct >= 30 ? '#e67e22' : '#e74c3c'
+                    return (
+                      <div key={prod} style={{ padding:'5px 8px', background:'rgba(255,255,255,0.04)', borderRadius:'5px' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <span style={{ color:'white', fontSize:'12px', fontWeight:'600' }}>{prod}</span>
+                          <span style={{ color:pctColor, fontSize:'12px', fontWeight:'bold' }}>{pct}%</span>
+                        </div>
+                        <div style={{ marginTop:'3px', height:'3px', background:'#1a0a00', borderRadius:'2px' }}>
+                          <div style={{ width:Math.min(pct,100)+'%', height:'100%', background:pctColor, borderRadius:'2px' }}/>
+                        </div>
+                        {royalty > 0 && <div style={{ color:'#3498db', fontSize:'11px', marginTop:'2px' }}>{formatMoney(royalty)}/passage</div>}
+                      </div>
+                    )
+                  })
+              }
+            </div>
+          </div>
+        </div>
+
+        <div style={{ borderTop:'1px solid #333', paddingTop:'16px', marginTop:'16px', display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap' }}>
           <span style={{ color:canAfford?'#27ae60':'#e74c3c', fontSize:'14px' }}>Total : {formatMoney(totalSelected)}</span>
           <button onClick={() => onBuy(selected)} disabled={!canAfford && selected.length > 0}
             style={{ padding:'10px 24px', background:canAfford||selected.length===0?'#c8962a':'#555', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', fontSize:'15px' }}>
