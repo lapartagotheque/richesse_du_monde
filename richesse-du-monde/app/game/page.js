@@ -313,6 +313,7 @@ export default function GamePage() {
   const [animDice, setAnimDice] = useState(null)
   const [animPositions, setAnimPositions] = useState({})
   const [teleportPos, setTeleportPos] = useState('0')
+  const [showMarket, setShowMarket] = useState(false)
 
   const reloadRef = useRef(null)
   reloadRef.current = {
@@ -708,6 +709,7 @@ export default function GamePage() {
         <h1 className="header-title">🌍 Richesses du Monde</h1>
         <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
           <span style={{ color:'#aaa', fontSize:'14px' }}>Connecté : <strong style={{ color:'#c8962a' }}>{user?.username}</strong></span>
+          <button onClick={() => setShowMarket(true)} style={{ padding:'6px 14px', background:'#1a4a6b', border:'1px solid #2980b9', borderRadius:'6px', color:'#3498db', cursor:'pointer', fontSize:'13px', fontWeight:'600' }}>📦 Ressources</button>
           {user?.role === 'admin' && (
             <button onClick={resetGame} style={{ padding:'6px 14px', background:'#c0392b', border:'none', borderRadius:'6px', color:'white', cursor:'pointer', fontSize:'13px' }}>🔄 Reset</button>
           )}
@@ -884,6 +886,10 @@ export default function GamePage() {
           onClose={() => { setModal(null); nextTurn() }}
           formatMoney={formatMoney}
         />
+      )}
+
+      {showMarket && (
+        <MarketModal titles={titles} onClose={() => setShowMarket(false)} />
       )}
     </div>
   )
@@ -1407,4 +1413,84 @@ function Modal({ modal, myPlayer, titles, user, onBuy, onActualite, onJoker, onC
   )
 
   return null
+}
+
+// ============================================================
+// MARCHÉ DES RESSOURCES
+// ============================================================
+function MarketModal({ titles, onClose }) {
+  const [filter, setFilter] = useState('')
+  const [onlyAvailable, setOnlyAvailable] = useState(false)
+
+  const grouped = {}
+  AVAILABLE_TITLES.forEach(t => {
+    if (!grouped[t.production]) grouped[t.production] = []
+    const owned = titles.find(o => o.production === t.production && o.region === t.region)
+    grouped[t.production].push({ ...t, owner: owned ? owned.users : null })
+  })
+
+  const resources = Object.entries(grouped)
+    .filter(([prod]) => !filter || prod.toLowerCase().includes(filter.toLowerCase()))
+    .filter(([, tiles]) => !onlyAvailable || tiles.some(t => !t.owner))
+    .sort(([a], [b]) => a.localeCompare(b))
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth:'740px', width:'100%' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px' }}>
+          <h3 style={{ color:'#c8962a', margin:0, fontFamily:"'Oswald',sans-serif", fontSize:'20px' }}>📦 Marché des ressources</h3>
+          <button onClick={onClose} style={{ background:'transparent', border:'1px solid #555', borderRadius:'6px', color:'#aaa', cursor:'pointer', padding:'4px 10px', fontSize:'14px' }}>✕</button>
+        </div>
+
+        <div style={{ display:'flex', gap:'10px', marginBottom:'14px', alignItems:'center' }}>
+          <input
+            placeholder="Filtrer par ressource..."
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            style={{ flex:1, padding:'7px 12px', background:'#0a0000', border:'1px solid #444', borderRadius:'6px', color:'white', fontSize:'13px', fontFamily:"'Barlow Condensed',sans-serif" }}
+          />
+          <label style={{ display:'flex', alignItems:'center', gap:'6px', color:'#aaa', fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap' }}>
+            <input type="checkbox" checked={onlyAvailable} onChange={e => setOnlyAvailable(e.target.checked)} />
+            Disponibles seulement
+          </label>
+        </div>
+
+        <div style={{ maxHeight:'62vh', overflowY:'auto', display:'flex', flexDirection:'column', gap:'10px' }}>
+          {resources.map(([prod, tiles]) => {
+            const totalPct = tiles.reduce((s, t) => s + t.percentage, 0)
+            const ownedPct = tiles.filter(t => t.owner).reduce((s, t) => s + t.percentage, 0)
+            const availPct = totalPct - ownedPct
+            const pctColor = availPct === 0 ? '#e74c3c' : availPct < totalPct * 0.4 ? '#e67e22' : '#27ae60'
+            return (
+              <div key={prod} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid #2a1a00', borderRadius:'8px', overflow:'hidden' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 12px', background:'rgba(200,150,42,0.08)', borderBottom:'1px solid #2a1a00' }}>
+                  <span style={{ color:'#c8962a', fontWeight:'bold', fontSize:'14px', fontFamily:"'Oswald',sans-serif", textTransform:'uppercase', letterSpacing:'0.04em' }}>{prod}</span>
+                  <span style={{ color:pctColor, fontSize:'12px', fontWeight:'bold' }}>
+                    {availPct > 0 ? `${availPct}% disponible` : 'Épuisé'} / {totalPct}% total
+                  </span>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:'1px', background:'#1a0a00' }}>
+                  {tiles.map((t, i) => (
+                    <div key={i} style={{ padding:'7px 12px', background: t.owner ? 'rgba(0,0,0,0.4)' : 'rgba(39,174,96,0.06)', display:'flex', flexDirection:'column', gap:'2px' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <span style={{ color:'#ddd', fontSize:'12px' }}>{t.region}</span>
+                        <span style={{ color:'#888', fontSize:'11px' }}>{t.percentage}%</span>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <span style={{ color:'#666', fontSize:'11px' }}>{t.country}</span>
+                        {t.owner
+                          ? <span style={{ color: PLAYER_COLORS[t.owner.color] || '#c8962a', fontSize:'11px', fontWeight:'bold' }}>● {t.owner.username}</span>
+                          : <span style={{ color:'#27ae60', fontSize:'11px', fontWeight:'600' }}>Disponible</span>
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
