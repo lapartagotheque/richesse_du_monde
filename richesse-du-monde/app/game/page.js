@@ -397,7 +397,14 @@ export default function GamePage() {
 
   async function loadTitles(gameId) {
     const { data } = await supabase.from('player_titles').select('*, users(username,color)').eq('game_id', gameId)
-    setTitles(data || [])
+    const seen = new Set()
+    const deduped = (data || []).filter(t => {
+      const key = `${t.user_id}|${t.production}|${t.region}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    setTitles(deduped)
   }
 
   async function loadLogs(gameId) {
