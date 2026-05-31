@@ -332,6 +332,7 @@ export default function GamePage() {
   const [animPositions, setAnimPositions] = useState({})
   const [teleportPos, setTeleportPos] = useState('0')
   const [viewResourcesPlayerId, setViewResourcesPlayerId] = useState(null)
+  const [showTradeModal, setShowTradeModal] = useState(false)
   const [showMarket, setShowMarket] = useState(false)
 
   const reloadRef = useRef(null)
@@ -452,6 +453,56 @@ export default function GamePage() {
   async function clearPendingAction(extraState = {}) {
     const { pending_action, ...rest } = game?.game_state || {}
     await supabase.from('games').update({ game_state: { ...rest, ...extraState } }).eq('id', game.id)
+  }
+
+  async function clearTradeProposal() {
+    const { trade_proposal, ...rest } = game?.game_state || {}
+    await supabase.from('games').update({ game_state: rest }).eq('id', game.id)
+  }
+
+  async function proposeTrade(proposal) {
+    const state = game?.game_state || {}
+    await supabase.from('games').update({ game_state: { ...state, trade_proposal: proposal } }).eq('id', game.id)
+    await addLog(`a proposé un échange à ${proposal.to_username}`, 0)
+  }
+
+  async function acceptTrade() {
+    const tp = game?.game_state?.trade_proposal
+    if (!tp) return
+    const fromPlayer = players.find(p => String(p.user_id) === String(tp.from_user_id))
+    const toPlayer   = players.find(p => String(p.user_id) === String(tp.to_user_id))
+    if (!fromPlayer || !toPlayer) return
+    const fromNewMoney = fromPlayer.money - (tp.offer.money || 0) + (tp.request.money || 0)
+    const toNewMoney   = toPlayer.money   - (tp.request.money || 0) + (tp.offer.money || 0)
+    await supabase.from('game_players').update({ money: fromNewMoney }).eq('id', fromPlayer.id)
+    await supabase.from('game_players').update({ money: toNewMoney }).eq('id', toPlayer.id)
+    for (const t of (tp.offer.titles || [])) {
+      const { data: row } = await supabase.from('player_titles').select('id')
+        .eq('game_id', game.id).eq('user_id', tp.from_user_id).eq('production', t.production).eq('region', t.region).maybeSingle()
+      if (row) await supabase.from('player_titles').update({ user_id: tp.to_user_id }).eq('id', row.id)
+    }
+    for (const t of (tp.request.titles || [])) {
+      const { data: row } = await supabase.from('player_titles').select('id')
+        .eq('game_id', game.id).eq('user_id', tp.to_user_id).eq('production', t.production).eq('region', t.region).maybeSingle()
+      if (row) await supabase.from('player_titles').update({ user_id: tp.from_user_id }).eq('id', row.id)
+    }
+    if (tp.offer.joker) {
+      await supabase.from('game_players').update({ has_joker: false }).eq('id', fromPlayer.id)
+      if (!toPlayer.has_joker) await supabase.from('game_players').update({ has_joker: true }).eq('id', toPlayer.id)
+    }
+    if (tp.request.joker) {
+      await supabase.from('game_players').update({ has_joker: false }).eq('id', toPlayer.id)
+      if (!fromPlayer.has_joker) await supabase.from('game_players').update({ has_joker: true }).eq('id', fromPlayer.id)
+    }
+    await clearTradeProposal()
+    await addLog(`a accepté l'échange de ${tp.from_username}`, 0)
+  }
+
+  async function declineTrade() {
+    const tp = game?.game_state?.trade_proposal
+    if (!tp) return
+    await clearTradeProposal()
+    await addLog(`a refusé l'échange de ${tp.from_username}`, 0)
   }
 
   async function rollDice() {
@@ -783,6 +834,14 @@ export default function GamePage() {
                 {!isMyTurn() && <div style={{ color:'white', fontSize:'13px', fontWeight:'bold' }}>{players.find(p => p.user_id === game?.current_player_id)?.users?.username || '...'}</div>}
               </div>
 
+              {isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal && (
+                <button
+                  onClick={() => setShowTradeModal(true)}
+                  style={{ width:'100%', padding:'10px', background:'#0d2a1a', border:'2px solid #27ae6055', borderRadius:'8px', color:'#27ae60', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600', marginBottom:'8px' }}
+                >
+                  🤝 Proposer un échange
+                </button>
+              )}
               {isMyTurn() && !modal && (
                 <button onClick={rollDice} disabled={rolling} className="roll-button" style={{ width:'100%' }}>
                   {rolling ? '🎲 ...' : '🎲 Lancer les dés'}
@@ -939,6 +998,214 @@ export default function GamePage() {
       {showMarket && (
         <MarketModal titles={titles} onClose={() => setShowMarket(false)} />
       )}
+
+      {showTradeModal && (
+        <TradeModal
+          players={players} myPlayer={myPlayer} titles={titles} user={user}
+          onClose={() => setShowTradeModal(false)}
+          onSend={proposeTrade}
+        />
+      )}
+
+      <TradeOverlay
+        proposal={game?.game_state?.trade_proposal}
+        players={players} myPlayer={myPlayer} user={user}
+        onAccept={acceptTrade}
+        onDecline={declineTrade}
+        onCancel={clearTradeProposal}
+        formatMoney={formatMoney}
+      />
+    </div>
+  )
+}
+
+// ============================================================
+// TRADE MODAL
+// ============================================================
+function TradeModal({ players, myPlayer, titles, user, onClose, onSend }) {
+  const [targetUserId, setTargetUserId] = useState('')
+  const [offerMoney, setOfferMoney] = useState('')
+  const [offerTitles, setOfferTitles] = useState([])
+  const [offerJoker, setOfferJoker] = useState(false)
+  const [requestMoney, setRequestMoney] = useState('')
+  const [requestTitles, setRequestTitles] = useState([])
+  const [requestJoker, setRequestJoker] = useState(false)
+
+  const otherPlayers = players.filter(p => String(p.user_id) !== String(user?.id))
+  const targetPlayer = players.find(p => String(p.user_id) === targetUserId)
+  const myTitles     = titles.filter(t => String(t.user_id) === String(user?.id))
+  const targetTitles = titles.filter(t => String(t.user_id) === targetUserId)
+
+  function toggleTitle(arr, setArr, t) {
+    const key = `${t.production}|${t.region}`
+    if (arr.some(x => `${x.production}|${x.region}` === key))
+      setArr(arr.filter(x => `${x.production}|${x.region}` !== key))
+    else
+      setArr([...arr, { production: t.production, region: t.region, percentage: t.percentage }])
+  }
+
+  function send() {
+    if (!targetUserId) return
+    onSend({
+      from_user_id: user.id,
+      from_username: myPlayer?.users?.username || String(user.id),
+      from_color: myPlayer?.users?.color,
+      to_user_id: targetUserId,
+      to_username: targetPlayer?.users?.username || targetUserId,
+      offer:   { money: parseInt(offerMoney)   || 0, titles: offerTitles,   joker: offerJoker },
+      request: { money: parseInt(requestMoney) || 0, titles: requestTitles, joker: requestJoker },
+    })
+    onClose()
+  }
+
+  const inp = { background:'#0a0000', border:'1px solid #c8962a55', borderRadius:'4px', color:'white', fontSize:'12px', padding:'4px 8px', width:'100%' }
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:2500, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+      <div style={{ background:'#1a0a00', border:'2px solid #c8962a', borderRadius:'16px', padding:'24px', maxWidth:'700px', width:'100%', maxHeight:'88vh', overflowY:'auto' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
+          <h2 style={{ margin:0, color:'#c8962a', fontFamily:"'Oswald',sans-serif" }}>🤝 Proposer un échange</h2>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer' }}>✕</button>
+        </div>
+
+        <div style={{ marginBottom:'16px' }}>
+          <label style={{ color:'#aaa', fontSize:'12px' }}>Proposer à :</label>
+          <select value={targetUserId} onChange={e => { setTargetUserId(e.target.value); setRequestTitles([]); setRequestJoker(false) }}
+            style={{ ...inp, marginTop:'4px' }}>
+            <option value=''>-- Choisir un joueur --</option>
+            {otherPlayers.map(p => (
+              <option key={p.user_id} value={String(p.user_id)}>{p.users?.username || p.user_id}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+          {/* Offre */}
+          <div style={{ background:'rgba(39,174,96,0.06)', border:'1px solid #27ae6033', borderRadius:'8px', padding:'12px' }}>
+            <div style={{ color:'#27ae60', fontSize:'12px', fontWeight:'bold', fontFamily:"'Oswald',sans-serif", marginBottom:'10px' }}>✅ JE PROPOSE</div>
+            <label style={{ color:'#aaa', fontSize:'11px' }}>Argent (F)</label>
+            <input type='number' min='0' value={offerMoney} onChange={e => setOfferMoney(e.target.value)} placeholder='0' style={{ ...inp, marginBottom:'10px', marginTop:'3px' }} />
+            {myPlayer?.has_joker && (
+              <label style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'10px', cursor:'pointer', color:'#aaa', fontSize:'11px' }}>
+                <input type='checkbox' checked={offerJoker} onChange={e => setOfferJoker(e.target.checked)} />
+                🃏 Mon Joker
+              </label>
+            )}
+            <div style={{ color:'#aaa', fontSize:'11px', marginBottom:'6px' }}>Mes titres :</div>
+            {myTitles.length === 0 && <div style={{ color:'#555', fontSize:'11px' }}>Aucun titre</div>}
+            {myTitles.map((t, i) => {
+              const key = `${t.production}|${t.region}`
+              const checked = offerTitles.some(x => `${x.production}|${x.region}` === key)
+              return (
+                <label key={i} style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'4px', cursor:'pointer' }}>
+                  <input type='checkbox' checked={checked} onChange={() => toggleTitle(offerTitles, setOfferTitles, t)} />
+                  <span style={{ color:'#ccc', fontSize:'11px' }}>{t.production} · {t.region} ({t.percentage}%)</span>
+                </label>
+              )
+            })}
+          </div>
+
+          {/* Demande */}
+          <div style={{ background:'rgba(231,76,60,0.06)', border:'1px solid #e74c3c33', borderRadius:'8px', padding:'12px' }}>
+            <div style={{ color:'#e74c3c', fontSize:'12px', fontWeight:'bold', fontFamily:"'Oswald',sans-serif", marginBottom:'10px' }}>📋 JE DEMANDE</div>
+            <label style={{ color:'#aaa', fontSize:'11px' }}>Argent (F)</label>
+            <input type='number' min='0' value={requestMoney} onChange={e => setRequestMoney(e.target.value)} placeholder='0' style={{ ...inp, marginBottom:'10px', marginTop:'3px' }} />
+            {targetPlayer?.has_joker && (
+              <label style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'10px', cursor:'pointer', color:'#aaa', fontSize:'11px' }}>
+                <input type='checkbox' checked={requestJoker} onChange={e => setRequestJoker(e.target.checked)} />
+                🃏 Son Joker
+              </label>
+            )}
+            {!targetUserId && <div style={{ color:'#555', fontSize:'11px' }}>Sélectionnez un joueur</div>}
+            {targetUserId && (
+              <>
+                <div style={{ color:'#aaa', fontSize:'11px', marginBottom:'6px' }}>Titres de {targetPlayer?.users?.username} :</div>
+                {targetTitles.length === 0 && <div style={{ color:'#555', fontSize:'11px' }}>Ce joueur n'a aucun titre</div>}
+                {targetTitles.map((t, i) => {
+                  const key = `${t.production}|${t.region}`
+                  const checked = requestTitles.some(x => `${x.production}|${x.region}` === key)
+                  return (
+                    <label key={i} style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'4px', cursor:'pointer' }}>
+                      <input type='checkbox' checked={checked} onChange={() => toggleTitle(requestTitles, setRequestTitles, t)} />
+                      <span style={{ color:'#ccc', fontSize:'11px' }}>{t.production} · {t.region} ({t.percentage}%)</span>
+                    </label>
+                  )
+                })}
+              </>
+            )}
+          </div>
+        </div>
+
+        <button onClick={send} disabled={!targetUserId}
+          style={{ width:'100%', marginTop:'16px', padding:'12px', background: targetUserId ? '#c8962a' : '#333', border:'none', borderRadius:'8px', color:'white', cursor: targetUserId ? 'pointer' : 'not-allowed', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
+          📨 Envoyer la proposition
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// TRADE OVERLAY
+// ============================================================
+function TradeOverlay({ proposal, players, myPlayer, user, onAccept, onDecline, onCancel, formatMoney }) {
+  if (!proposal) return null
+  const isRecipient = String(proposal.to_user_id)   === String(user?.id)
+  const isProposer  = String(proposal.from_user_id)  === String(user?.id)
+  if (!isRecipient && !isProposer) return null
+  const fromColor = PLAYER_COLORS[proposal.from_color] || '#c8962a'
+
+  function SideBox({ side, label, color }) {
+    const has = side.money > 0 || side.titles?.length > 0 || side.joker
+    return (
+      <div style={{ background:`rgba(0,0,0,0.2)`, border:`1px solid ${color}33`, borderRadius:'8px', padding:'12px', flex:1 }}>
+        <div style={{ color, fontSize:'11px', fontWeight:'bold', fontFamily:"'Oswald',sans-serif", marginBottom:'8px' }}>{label}</div>
+        {!has && <div style={{ color:'#555', fontSize:'12px' }}>Rien</div>}
+        {side.money > 0 && <div style={{ color:'#27ae60', fontSize:'13px', marginBottom:'4px' }}>💰 {formatMoney(side.money)}</div>}
+        {side.joker && <div style={{ color:'#c8962a', fontSize:'13px', marginBottom:'4px' }}>🃏 Joker</div>}
+        {(side.titles || []).map((t, i) => (
+          <div key={i} style={{ color:'#ccc', fontSize:'12px', marginBottom:'3px' }}>• {t.production} · {t.region} ({t.percentage}%)</div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:1900, background:'rgba(0,0,0,0.90)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+      <div style={{ background:'#1a0a00', border:`2px solid ${fromColor}`, borderRadius:'16px', padding:'28px', maxWidth:'520px', width:'100%', boxShadow:`0 0 40px ${fromColor}44` }}>
+        <div style={{ textAlign:'center', marginBottom:'16px' }}>
+          <div style={{ color:fromColor, fontSize:'20px', fontWeight:700, fontFamily:"'Oswald',sans-serif" }}>🤝 Proposition d'échange</div>
+          <div style={{ color:'#aaa', fontSize:'13px', marginTop:'4px' }}>
+            {isRecipient ? `${proposal.from_username} vous propose un échange` : `En attente de réponse de ${proposal.to_username}...`}
+          </div>
+        </div>
+
+        {isRecipient && (
+          <>
+            <div style={{ display:'flex', gap:'12px', marginBottom:'20px', alignItems:'stretch' }}>
+              <SideBox side={proposal.offer}   label="IL OFFRE"   color="#27ae60" />
+              <div style={{ color:'#555', fontSize:'24px', alignSelf:'center' }}>⇄</div>
+              <SideBox side={proposal.request} label="IL DEMANDE" color="#e74c3c" />
+            </div>
+            <div style={{ display:'flex', gap:'12px' }}>
+              <button onClick={onDecline} style={{ flex:1, padding:'12px', background:'#2a1010', border:'1px solid #e74c3c55', borderRadius:'8px', color:'#e74c3c', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
+                ❌ Refuser
+              </button>
+              <button onClick={onAccept} style={{ flex:1, padding:'12px', background:'#27ae60', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
+                ✅ Accepter
+              </button>
+            </div>
+          </>
+        )}
+
+        {isProposer && (
+          <div style={{ textAlign:'center' }}>
+            <button onClick={onCancel} style={{ padding:'10px 28px', background:'#2a1010', border:'1px solid #e74c3c55', borderRadius:'8px', color:'#e74c3c', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif" }}>
+              Annuler la proposition
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
