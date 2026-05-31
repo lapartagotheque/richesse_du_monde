@@ -1460,35 +1460,39 @@ function MarketModal({ titles, onClose }) {
           <p style={{ color:'#aaa', textAlign:'center', padding:'40px 0', fontSize:'16px' }}>Aucune ressource trouvée</p>
         )}
 
-        <div style={{ maxHeight:'60vh', overflowY:'auto', display:'flex', flexDirection:'column', gap:'12px', paddingRight:'4px' }}>
-          {resources.map(([prod, tiles]) => {
-            const totalPct = tiles.reduce((s, t) => s + t.percentage, 0)
-            const ownedPct = tiles.filter(t => t.owner).reduce((s, t) => s + t.percentage, 0)
-            const availPct = totalPct - ownedPct
-            const pctColor = availPct === 0 ? '#e74c3c' : availPct < totalPct * 0.4 ? '#e67e22' : '#27ae60'
-            return (
-              <div key={prod} style={{ border:'1px solid #3a2000', borderRadius:'10px', overflow:'hidden' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 16px', background:'#2a1200' }}>
-                  <span style={{ color:'#c8962a', fontWeight:'bold', fontSize:'16px', fontFamily:"'Oswald',sans-serif", textTransform:'uppercase' }}>{prod}</span>
-                  <span style={{ color:pctColor, fontSize:'13px', fontWeight:'bold', background:'rgba(0,0,0,0.4)', padding:'3px 10px', borderRadius:'20px', border:`1px solid ${pctColor}66` }}>
-                    {availPct > 0 ? `${availPct}% libre` : '✗ Épuisé'} / {totalPct}% total
-                  </span>
-                </div>
-                {tiles.map((t, i) => (
-                  <div key={i} style={{ display:'flex', alignItems:'center', padding:'9px 16px', background: i % 2 === 0 ? '#180a00' : '#1e0e00', borderTop:'1px solid #2a1400' }}>
-                    <span style={{ flex:'0 0 150px', color:'white', fontSize:'14px', fontWeight:'600' }}>{t.region}</span>
-                    <span style={{ flex:'0 0 140px', color:'#c8b08a', fontSize:'13px' }}>{t.country}</span>
-                    <span style={{ flex:'0 0 50px', color:'#c8962a', fontSize:'13px', fontWeight:'bold' }}>{t.percentage}%</span>
-                    <span style={{ flex:1, textAlign:'right', fontSize:'13px', fontWeight:'700',
-                      color: t.owner ? (PLAYER_COLORS[t.owner.color] || '#c8962a') : '#27ae60'
-                    }}>
-                      {t.owner ? `● ${t.owner.username}` : '✔ Disponible'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )
-          })}
+        <div style={{ maxHeight:'60vh', overflowY:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'14px' }}>
+            <tbody>
+              {resources.map(([prod, tiles]) => {
+                const totalPct = tiles.reduce((s, t) => s + t.percentage, 0)
+                const ownedPct = tiles.filter(t => t.owner).reduce((s, t) => s + t.percentage, 0)
+                const availPct = totalPct - ownedPct
+                const pctColor = availPct === 0 ? '#e74c3c' : availPct < totalPct * 0.4 ? '#e67e22' : '#27ae60'
+                return [
+                  <tr key={prod + '_h'}>
+                    <td colSpan={4} style={{ background:'#2a1200', padding:'10px 14px', borderTop:'2px solid #3a2000' }}>
+                      <span style={{ color:'#c8962a', fontWeight:'bold', fontSize:'16px', fontFamily:"'Oswald',sans-serif", textTransform:'uppercase', marginRight:'12px' }}>{prod}</span>
+                      <span style={{ color:pctColor, fontSize:'12px', fontWeight:'bold' }}>
+                        {availPct > 0 ? `${availPct}% libre` : '✗ Épuisé'} / {totalPct}% total
+                      </span>
+                    </td>
+                  </tr>,
+                  ...tiles.map((t, i) => (
+                    <tr key={prod + t.region} style={{ background: i % 2 === 0 ? '#130800' : '#1a0e00' }}>
+                      <td style={{ padding:'8px 14px', color:'#ffffff', fontWeight:'600' }}>{t.region}</td>
+                      <td style={{ padding:'8px 8px', color:'#c8b08a' }}>{t.country}</td>
+                      <td style={{ padding:'8px 8px', color:'#c8962a', fontWeight:'bold', whiteSpace:'nowrap' }}>{t.percentage}%</td>
+                      <td style={{ padding:'8px 14px', textAlign:'right', fontWeight:'700', whiteSpace:'nowrap',
+                        color: t.owner ? (PLAYER_COLORS[t.owner.color] || '#c8962a') : '#27ae60'
+                      }}>
+                        {t.owner ? `● ${t.owner.username}` : '✔ Disponible'}
+                      </td>
+                    </tr>
+                  ))
+                ]
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
