@@ -621,16 +621,21 @@ export default function GamePage() {
   async function buyTitles(selectedTitles) {
     if (!selectedTitles || selectedTitles.length === 0) { await nextTurn(); setModal(null); return }
     let totalCost = 0
+    let bought = 0
     for (const t of selectedTitles) {
+      const { data: existing } = await supabase.from('player_titles')
+        .select('id').eq('game_id', game.id).eq('production', t.production).eq('region', t.region).maybeSingle()
+      if (existing) continue
       totalCost += t.price
+      bought++
       await supabase.from('player_titles').insert({
         game_id: game.id, user_id: user.id,
         production: t.production, region: t.region,
         percentage: t.percentage, buy_price: t.price
       })
     }
-    await updateMoney(myPlayer.id, -totalCost)
-    await addLog(`achète ${selectedTitles.length} titre(s) pour ${formatMoney(totalCost)}`, totalCost)
+    if (totalCost > 0) await updateMoney(myPlayer.id, -totalCost)
+    if (bought > 0) await addLog(`achète ${bought} titre(s) pour ${formatMoney(totalCost)}`, totalCost)
     setModal(null)
     await nextTurn()
   }
