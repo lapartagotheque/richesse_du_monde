@@ -252,25 +252,43 @@ const FIXED_ROYALTY_TILES = {
 }
 
 
+// ── CARTES ACTUALITÉ ────────────────────────────────────────────
+// Deux formats possibles :
+//
+// Format ressource :
+//   { text, resource, gain_holder, gain_other }
+//   • resource    : nom exact de la ressource (doit correspondre à PRODUCTIONS)
+//   • gain_holder : montant reçu si le joueur POSSÈDE la ressource  (toujours positif)
+//   • gain_other  : montant reçu si le joueur NE possède PAS la ressource (toujours positif)
+//   → Bonne nouvelle pour le détenteur  : gain_holder > gain_other
+//   → Mauvaise nouvelle pour le détenteur : gain_holder < gain_other
+//
+// Format global :
+//   { text, all_gain }   → tout le monde reçoit all_gain
+//   { text, all_perte }  → tout le monde perd all_perte
+// ────────────────────────────────────────────────────────────────
 const ACTUALITE_CARDS = [
-  { text: "Splendides récoltes de blé ! Recevez 7M si vous possédez du blé, sinon payez 5M.", gain_prod: 'Blé', gain: 7000000, perte: 5000000 },
-  { text: "Surproduction de café ! Payez 4M si vous possédez du café, sinon recevez 5M.", perte_prod: 'Café', perte: 4000000, gain: 5000000 },
-  { text: "Tension internationale ! Recevez 5M si vous possédez de l'uranium, sinon payez 4M.", gain_prod: 'Uranium', gain: 5000000, perte: 4000000 },
-  { text: "Incidents au Zaïre ! Payez 9M si vous possédez du cuivre, sinon recevez 4M.", perte_prod: 'Cuivre', perte: 9000000, gain: 4000000 },
-  { text: "Boom pétrolier mondial ! Recevez 10M si vous possédez du pétrole, sinon payez 3M.", gain_prod: 'Pétrole', gain: 10000000, perte: 3000000 },
-  { text: "Crise de l'acier ! Payez 6M si vous possédez de l'acier, sinon recevez 2M.", perte_prod: 'Acier', perte: 6000000, gain: 2000000 },
-  { text: "Récolte exceptionnelle de riz ! Recevez 8M si vous possédez du riz, sinon payez 2M.", gain_prod: 'Riz', gain: 8000000, perte: 2000000 },
-  { text: "Effondrement du cours de l'or ! Payez 5M si vous possédez de l'or, sinon recevez 3M.", perte_prod: 'Or', perte: 5000000, gain: 3000000 },
-  { text: "Découverte de gisements de nickel ! Recevez 6M si vous possédez du nickel, sinon payez 2M.", gain_prod: 'Nickel', gain: 6000000, perte: 2000000 },
-  { text: "Grève dans les mines de houille ! Payez 7M si vous possédez de la houille, sinon recevez 4M.", perte_prod: 'Houille', perte: 7000000, gain: 4000000 },
-  { text: "Essor de la construction automobile ! Recevez 9M si vous la possédez, sinon payez 3M.", gain_prod: 'Construction automobile', gain: 9000000, perte: 3000000 },
-  { text: "Mauvaise récolte de cacao ! Payez 4M si vous possédez du cacao, sinon recevez 5M.", perte_prod: 'Cacao', perte: 4000000, gain: 5000000 },
-  { text: "Boom du caoutchouc ! Recevez 7M si vous possédez du caoutchouc naturel, sinon payez 2M.", gain_prod: 'Caoutchouc naturel', gain: 7000000, perte: 2000000 },
+  // Bonnes nouvelles pour les détenteurs
+  { text: "Splendides récoltes de blé ! Recevez 7M si vous possédez du blé, sinon 1M.", resource: 'Blé', gain_holder: 7000000, gain_other: 1000000 },
+  { text: "Tension internationale ! Recevez 5M si vous possédez de l'uranium, sinon 1M.", resource: 'Uranium', gain_holder: 5000000, gain_other: 1000000 },
+  { text: "Boom pétrolier mondial ! Recevez 10M si vous possédez du pétrole, sinon 2M.", resource: 'Pétrole', gain_holder: 10000000, gain_other: 2000000 },
+  { text: "Récolte exceptionnelle de riz ! Recevez 8M si vous possédez du riz, sinon 1M.", resource: 'Riz', gain_holder: 8000000, gain_other: 1000000 },
+  { text: "Découverte de gisements de nickel ! Recevez 6M si vous possédez du nickel, sinon 1M.", resource: 'Nickel', gain_holder: 6000000, gain_other: 1000000 },
+  { text: "Essor de la construction automobile ! Recevez 9M si vous la possédez, sinon 2M.", resource: 'Construction automobile', gain_holder: 9000000, gain_other: 2000000 },
+  { text: "Boom du caoutchouc ! Recevez 7M si vous possédez du caoutchouc naturel, sinon 1M.", resource: 'Caoutchouc naturel', gain_holder: 7000000, gain_other: 1000000 },
+  { text: "Récolte de thé exceptionnelle ! Recevez 5M si vous possédez du thé, sinon 1M.", resource: 'Thé', gain_holder: 5000000, gain_other: 1000000 },
+  // Mauvaises nouvelles pour les détenteurs
+  { text: "Surproduction de café ! Cours en chute : recevez 1M si vous possédez du café, sinon 4M.", resource: 'Café', gain_holder: 1000000, gain_other: 4000000 },
+  { text: "Incidents au Zaïre ! Crise du cuivre : recevez 1M si vous possédez du cuivre, sinon 4M.", resource: 'Cuivre', gain_holder: 1000000, gain_other: 4000000 },
+  { text: "Crise de l'acier ! Recevez 1M si vous possédez de l'acier, sinon 2M.", resource: 'Acier', gain_holder: 1000000, gain_other: 2000000 },
+  { text: "Effondrement du cours de l'or ! Recevez 1M si vous possédez de l'or, sinon 3M.", resource: 'Or', gain_holder: 1000000, gain_other: 3000000 },
+  { text: "Grève dans les mines de houille ! Recevez 1M si vous possédez de la houille, sinon 4M.", resource: 'Houille', gain_holder: 1000000, gain_other: 4000000 },
+  { text: "Mauvaise récolte de cacao ! Recevez 1M si vous possédez du cacao, sinon 4M.", resource: 'Cacao', gain_holder: 1000000, gain_other: 4000000 },
+  { text: "Crise du cobalt ! Recevez 1M si vous possédez du cobalt, sinon 3M.", resource: 'Cobalt', gain_holder: 1000000, gain_other: 3000000 },
+  { text: "Crise du sucre mondial ! Recevez 1M si vous possédez du sucre, sinon 3M.", resource: 'Sucre', gain_holder: 1000000, gain_other: 3000000 },
+  // Cartes globales
   { text: "Krach boursier ! Tous les joueurs perdent 3M.", all_perte: 3000000 },
   { text: "Fête mondiale ! Tous les joueurs reçoivent 2M.", all_gain: 2000000 },
-  { text: "Crise du cobalt ! Payez 8M si vous possédez du cobalt, sinon recevez 3M.", perte_prod: 'Cobalt', perte: 8000000, gain: 3000000 },
-  { text: "Récolte de thé exceptionnelle ! Recevez 5M si vous possédez du thé, sinon payez 2M.", gain_prod: 'Thé', gain: 5000000, perte: 2000000 },
-  { text: "Crise du sucre mondial ! Payez 4M si vous possédez du sucre, sinon recevez 3M.", perte_prod: 'Sucre', perte: 4000000, gain: 3000000 },
 ]
 
 const PLAYER_COLORS = {
@@ -494,12 +512,9 @@ export default function GamePage() {
       let amount = 0
       if (actualiteCard.all_gain) { amount = actualiteCard.all_gain }
       else if (actualiteCard.all_perte) { amount = -actualiteCard.all_perte }
-      else if (actualiteCard.gain_prod) {
-        const has = myTitlesNow.some(t => t.production === actualiteCard.gain_prod)
-        amount = has ? actualiteCard.gain : -actualiteCard.perte
-      } else if (actualiteCard.perte_prod) {
-        const has = myTitlesNow.some(t => t.production === actualiteCard.perte_prod)
-        amount = has ? -actualiteCard.perte : actualiteCard.gain
+      else if (actualiteCard.resource) {
+        const has = myTitlesNow.some(t => t.production === actualiteCard.resource)
+        amount = has ? actualiteCard.gain_holder : actualiteCard.gain_other
       }
       actualiteCard = { ...actualiteCard, computed_amount: amount }
     }
@@ -625,12 +640,9 @@ export default function GamePage() {
     let amount = 0
     if (card.all_gain) { amount = card.all_gain }
     else if (card.all_perte) { amount = -card.all_perte }
-    else if (card.gain_prod) {
-      const has = myTitles.some(t => t.production === card.gain_prod)
-      amount = has ? card.gain : -card.perte
-    } else if (card.perte_prod) {
-      const has = myTitles.some(t => t.production === card.perte_prod)
-      amount = has ? -card.perte : card.gain
+    else if (card.resource) {
+      const has = myTitles.some(t => t.production === card.resource)
+      amount = has ? card.gain_holder : card.gain_other
     }
     await updateMoney(myPlayer.id, amount)
     await addLog(`carte Actualité : ${amount >= 0 ? '+' : ''}${formatMoney(amount)}`, Math.abs(amount))
