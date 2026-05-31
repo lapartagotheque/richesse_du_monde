@@ -1149,6 +1149,7 @@ function DiceFace({ value, spinning }) {
 // MES TITRES
 // ============================================================
 function MyTitles({ titles, getRoyalties, getTotalPercentage }) {
+  const [expanded, setExpanded] = useState(null)
   const byProd = {}
   titles.forEach(t => { if (!byProd[t.production]) byProd[t.production] = []; byProd[t.production].push(t) })
   if (!Object.keys(byProd).length) return <div style={{ color:'#555', textAlign:'center', padding:'12px 0', fontSize:'12px' }}>Aucun titre possédé</div>
@@ -1158,21 +1159,40 @@ function MyTitles({ titles, getRoyalties, getTotalPercentage }) {
         const pct = getTotalPercentage(prod)
         const royalties = getRoyalties(prod)
         const pctColor = pct >= 70?'#27ae60':pct >= 50?'#f39c12':pct >= 30?'#e67e22':'#e74c3c'
+        const isOpen = expanded === prod
         return (
-          <div key={prod} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid #2a1a00', borderRadius:'6px', padding:'8px 10px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'3px' }}>
-              <span style={{ color:'#c8962a', fontWeight:'bold', fontSize:'11px', textTransform:'uppercase' }}>{prod}</span>
-              <span style={{ color:pctColor, fontSize:'11px', fontWeight:'bold' }}>{pct}%</span>
+          <div key={prod} style={{ background:'rgba(255,255,255,0.05)', border:`1px solid ${isOpen?'#c8962a66':'#2a1a00'}`, borderRadius:'6px', overflow:'hidden' }}>
+            <div
+              onClick={() => setExpanded(isOpen ? null : prod)}
+              style={{ padding:'8px 10px', cursor:'pointer' }}
+            >
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'3px' }}>
+                <span style={{ color:'#c8962a', fontWeight:'bold', fontSize:'11px', textTransform:'uppercase' }}>{prod}</span>
+                <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                  <span style={{ color:pctColor, fontSize:'11px', fontWeight:'bold' }}>{pct}%</span>
+                  <span style={{ color:'#555', fontSize:'10px' }}>{isOpen ? '▲' : '▼'}</span>
+                </div>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ color:'#aaa', fontSize:'10px' }}>{ts.length} région{ts.length > 1 ? 's' : ''}</span>
+                <span style={{ color:royalties>0?'#3498db':'#555', fontSize:'10px', fontWeight:'bold' }}>
+                  {royalties > 0 ? (royalties/1000000).toFixed(1)+'M F' : '< 30%'}
+                </span>
+              </div>
+              <div style={{ marginTop:'4px', height:'3px', background:'#1a0a00', borderRadius:'2px', overflow:'hidden' }}>
+                <div style={{ width:Math.min(pct,100)+'%', height:'100%', background:pctColor, borderRadius:'2px', transition:'width 0.3s' }}/>
+              </div>
             </div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ color:'#aaa', fontSize:'10px' }}>{ts.map(t => t.region?.split(' ')[0]).join(', ')}</span>
-              <span style={{ color:royalties>0?'#3498db':'#555', fontSize:'10px', fontWeight:'bold' }}>
-                {royalties > 0 ? (royalties/1000000).toFixed(1)+'M F' : '< 30%'}
-              </span>
-            </div>
-            <div style={{ marginTop:'4px', height:'3px', background:'#1a0a00', borderRadius:'2px', overflow:'hidden' }}>
-              <div style={{ width:Math.min(pct,100)+'%', height:'100%', background:pctColor, borderRadius:'2px', transition:'width 0.3s' }}/>
-            </div>
+            {isOpen && (
+              <div style={{ borderTop:'1px solid #2a1a00', padding:'6px 10px', display:'flex', flexDirection:'column', gap:'4px' }}>
+                {ts.map((t, i) => (
+                  <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <span style={{ color:'#ccc', fontSize:'10px' }}>{t.region}</span>
+                    <span style={{ color:pctColor, fontSize:'10px', fontWeight:'bold' }}>{t.percentage}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )
       })}
