@@ -422,9 +422,9 @@ export default function GamePage() {
       .eq('id', game.id)
   }
 
-  async function clearPendingAction() {
+  async function clearPendingAction(extraState = {}) {
     const { pending_action, ...rest } = game?.game_state || {}
-    await supabase.from('games').update({ game_state: rest }).eq('id', game.id)
+    await supabase.from('games').update({ game_state: { ...rest, ...extraState } }).eq('id', game.id)
   }
 
   async function rollDice() {
@@ -460,7 +460,11 @@ export default function GamePage() {
     const newLaps = myPlayer.laps_done + Math.floor(rawNew / 65)
     const landedCase = LISTE[physNewPos]
     const caseResource = FIXED_ROYALTY_TILES[physNewPos] || null
-    const doublePenalty = finalD1 === finalD2 ? finalD1 * 1000000 : null
+    const isDouble = finalD1 === finalD2
+    const doublesCountsMap = game?.game_state?.doubles_counts || {}
+    const currentDoublesCount = doublesCountsMap[user.id] || 0
+    const newDoublesCount = isDouble ? currentDoublesCount + 1 : currentDoublesCount
+    const doublePenalty = isDouble && newDoublesCount > 2 ? (newDoublesCount - 2) * 1000000 : null
 
     const royaltyPayments = []
     if (caseResource) {
@@ -476,7 +480,8 @@ export default function GamePage() {
 
     const playerName = myPlayer.users?.username
     const lines = [`${playerName} avance de ${total} case${total > 1 ? 's' : ''} et tombe sur : ${landedCase.label}`]
-    if (doublePenalty) lines.push(`⚠️ Double ${finalD1} ! Pénalité bancaire : ${formatMoney(doublePenalty)}`)
+    if (isDouble && newDoublesCount <= 2) lines.push(`⚠️ Double ${finalD1} ! (${newDoublesCount}/2 doubles gratuits — pas de pénalité)`)
+    if (doublePenalty) lines.push(`⚠️ Double ${finalD1} ! (${newDoublesCount}ème double) — pénalité : ${formatMoney(doublePenalty)}`)
     if (caseResource) lines.push(`Ressource : ${caseResource}`)
     royaltyPayments.forEach(r => lines.push(`Royalties ${r.resource} → ${r.to_name} : ${formatMoney(r.amount)}`))
 
@@ -516,7 +521,7 @@ export default function GamePage() {
       player_name: playerName,
       player_color: myPlayer.users?.color,
       lines,
-      data: { newPos: physNewPos, newLaps, diceRed: dr, total, doublePenalty, royaltyPayments, landingType: landedCase.type, cas: landedCase, actualiteCard }
+      data: { newPos: physNewPos, newLaps, diceRed: dr, total, doublePenalty, isDouble, newDoublesCount, royaltyPayments, landingType: landedCase.type, cas: landedCase, actualiteCard }
     })
 
     setRolling(false)
@@ -587,7 +592,8 @@ export default function GamePage() {
       await supabase.from('game_players').update({ bankrupt: true }).eq('id', freshMe.id)
       await addLog('est en FAILLITE !', 0)
     }
-    await clearPendingAction()
+    const updatedDoubles = { ...(game?.game_state?.doubles_counts || {}), [user.id]: d.isDouble ? d.newDoublesCount : 0 }
+    await clearPendingAction({ doubles_counts: updatedDoubles })
     if (nextModal) setModal(nextModal)
     else await nextTurn()
     await loadGame(game.id)
