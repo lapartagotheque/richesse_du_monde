@@ -736,8 +736,10 @@ export default function GamePage() {
   }
 
   async function nextTurn() {
-    if (!game || !players.length) return
-    const activePlayers = players.filter(p => !p.bankrupt)
+    if (!game) return
+    const { data: freshPs } = await supabase.from('game_players').select('*').eq('game_id', game.id)
+    if (!freshPs?.length) return
+    const activePlayers = freshPs.filter(p => !p.bankrupt)
     if (activePlayers.length <= 1) {
       await supabase.from('games').update({ status: 'finished' }).eq('id', game.id)
       setPhase('finished')
