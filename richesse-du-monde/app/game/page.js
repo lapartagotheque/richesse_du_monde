@@ -621,6 +621,11 @@ export default function GamePage() {
     await supabase.from('game_players').update({ position: d.newPos, laps_done: d.newLaps }).eq('id', freshMe.id)
     await addLog(`avance de ${d.total} cases → ${d.cas.label}`, 0)
 
+    if (d.newLaps > freshMe.laps_done) {
+      myMoney += 5000000
+      await addLog('passe par DÉPART — reçoit 5 000 000 F', 5000000)
+    }
+
     if (d.doublePenalty) {
       myMoney = Math.max(0, myMoney - d.doublePenalty)
       await addLog(`a fait double — paie ${formatMoney(d.doublePenalty)} à la banque`, d.doublePenalty)
