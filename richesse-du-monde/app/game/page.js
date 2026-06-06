@@ -333,6 +333,7 @@ export default function GamePage() {
   const [teleportPos, setTeleportPos] = useState('0')
   const [viewResourcesPlayerId, setViewResourcesPlayerId] = useState(null)
   const [showTradeModal, setShowTradeModal] = useState(false)
+  const [boardZoom, setBoardZoom] = useState(1)
   const [showMarket, setShowMarket] = useState(false)
 
   const reloadRef = useRef(null)
@@ -937,7 +938,15 @@ export default function GamePage() {
         </div>
 
         {/* PLATEAU CENTRAL */}
-        <div style={{ padding:'12px', display:'flex', alignItems:'flex-start', justifyContent:'center', overflow:'hidden', minWidth:0 }}>
+        <div style={{ display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'6px 12px 0', flexShrink:0 }}>
+            <button onClick={() => setBoardZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))} style={{ width:28, height:28, background:'#1a0a00', border:'1px solid #c8962a55', borderRadius:'4px', color:'#c8962a', cursor:'pointer', fontSize:'16px', lineHeight:1 }}>−</button>
+            <span style={{ color:'#555', fontSize:'12px', minWidth:'36px', textAlign:'center' }}>{Math.round(boardZoom * 100)}%</span>
+            <button onClick={() => setBoardZoom(z => Math.min(1.5, +(z + 0.1).toFixed(1)))} style={{ width:28, height:28, background:'#1a0a00', border:'1px solid #c8962a55', borderRadius:'4px', color:'#c8962a', cursor:'pointer', fontSize:'16px', lineHeight:1 }}>+</button>
+            <button onClick={() => setBoardZoom(1)} style={{ padding:'0 8px', height:28, background:'#1a0a00', border:'1px solid #2a1a00', borderRadius:'4px', color:'#555', cursor:'pointer', fontSize:'11px' }}>100%</button>
+          </div>
+          <div style={{ padding:'12px', overflow:'auto', flex:1 }}>
+          <div style={{ zoom: boardZoom, display:'inline-block' }}>
           {(phase === 'playing' || phase === 'finished') && (
             <Board
               players={players}
@@ -957,6 +966,8 @@ export default function GamePage() {
               En attente des joueurs...
             </div>
           )}
+          </div>
+          </div>
         </div>
 
         {/* SIDEBAR DROITE */}
