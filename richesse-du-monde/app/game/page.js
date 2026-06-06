@@ -672,13 +672,14 @@ export default function GamePage() {
     }
     const updatedDoubles = { ...(game?.game_state?.doubles_counts || {}), [user.id]: d.isDouble ? d.newDoublesCount : 0 }
     await clearPendingAction({ doubles_counts: updatedDoubles })
-    if (nextModal) setModal(nextModal)
+    if (nextModal) setModal({ ...nextModal, isDouble: d.isDouble })
+    else if (d.isDouble) setDiceResult(null)
     else await nextTurn()
     await loadGame(game.id)
   }
 
   async function buyTitles(selectedTitles) {
-    if (!selectedTitles || selectedTitles.length === 0) { await nextTurn(); setModal(null); return }
+    if (!selectedTitles || selectedTitles.length === 0) { setModal(null); if (modal?.isDouble) setDiceResult(null); else await nextTurn(); return }
     let totalCost = 0
     let bought = 0
     for (const t of selectedTitles) {
@@ -696,7 +697,7 @@ export default function GamePage() {
     if (totalCost > 0) await updateMoney(myPlayer.id, -totalCost)
     if (bought > 0) await addLog(`achète ${bought} titre(s) pour ${formatMoney(totalCost)}`, totalCost)
     setModal(null)
-    await nextTurn()
+    if (modal?.isDouble) setDiceResult(null); else await nextTurn()
   }
 
   async function handleActualite(card) {
@@ -711,7 +712,7 @@ export default function GamePage() {
     await updateMoney(myPlayer.id, amount)
     await addLog(`carte Actualité : ${amount >= 0 ? '+' : ''}${formatMoney(amount)}`, Math.abs(amount))
     setModal(null)
-    await nextTurn()
+    if (modal?.isDouble) setDiceResult(null); else await nextTurn()
   }
 
   async function buyJoker() {
@@ -720,7 +721,7 @@ export default function GamePage() {
     await updateMoney(myPlayer.id, -3000000)
     await addLog('achète un Joker pour 3.000.000 F', 3000000)
     setModal(null)
-    await nextTurn()
+    if (modal?.isDouble) setDiceResult(null); else await nextTurn()
   }
 
   async function updateMoney(playerId, delta) {
@@ -990,7 +991,7 @@ export default function GamePage() {
       {modal && (
         <Modal modal={modal} myPlayer={myPlayer} titles={titles} players={players} user={user}
           onBuy={buyTitles} onActualite={handleActualite} onJoker={buyJoker}
-          onClose={() => { setModal(null); nextTurn() }}
+          onClose={() => { setModal(null); if (modal?.isDouble) setDiceResult(null); else nextTurn() }}
           formatMoney={formatMoney}
         />
       )}
