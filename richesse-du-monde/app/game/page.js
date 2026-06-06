@@ -503,6 +503,25 @@ export default function GamePage() {
     await addLog(`a accepté l'échange de ${tp.from_username}`, 0)
   }
 
+  async function declareForfeit() {
+    if (!myPlayer) return
+    await supabase.from('game_players').update({ bankrupt: true, money: 0 }).eq('id', myPlayer.id)
+    await addLog('déclare forfait — en FAILLITE !', 0)
+    const { pending_bankruptcy, ...rest } = game?.game_state || {}
+    await supabase.from('games').update({ game_state: rest }).eq('id', game.id)
+    await nextTurn()
+    await loadGame(game.id)
+  }
+
+  async function surviveBankruptcy() {
+    if (!myPlayer) return
+    await addLog('a trouvé des fonds et survit à la faillite !', 0)
+    const { pending_bankruptcy, ...rest } = game?.game_state || {}
+    await supabase.from('games').update({ game_state: rest }).eq('id', game.id)
+    await nextTurn()
+    await loadGame(game.id)
+  }
+
   async function declineTrade() {
     const tp = game?.game_state?.trade_proposal
     if (!tp) return
@@ -626,7 +645,11 @@ export default function GamePage() {
       await addLog('passe par DÉPART — reçoit 5 000 000 F', 5000000)
     }
 
+    let debtAmount = 0
+
     if (d.doublePenalty) {
+      const paid = Math.min(myMoney, d.doublePenalty)
+      debtAmount += d.doublePenalty - paid
       myMoney = Math.max(0, myMoney - d.doublePenalty)
       await addLog(`a fait double — paie ${formatMoney(d.doublePenalty)} à la banque`, d.doublePenalty)
     }
@@ -634,6 +657,8 @@ export default function GamePage() {
     if (d.royaltyPayments?.length > 0) {
       for (const r of d.royaltyPayments) {
         const amount = useJoker ? Math.floor(r.amount / 2) : r.amount
+        const paid = Math.min(myMoney, amount)
+        debtAmount += amount - paid
         myMoney = Math.max(0, myMoney - amount)
         const creditor = freshPlayers?.find(p => p.id === r.to_id)
         if (creditor) await supabase.from('game_players').update({ money: creditor.money + amount }).eq('id', r.to_id)
@@ -676,15 +701,22 @@ export default function GamePage() {
     }
 
     await supabase.from('game_players').update({ money: myMoney }).eq('id', freshMe.id)
-    if (myMoney === 0) {
-      await supabase.from('game_players').update({ bankrupt: true }).eq('id', freshMe.id)
-      await addLog('est en FAILLITE !', 0)
-    }
     const updatedDoubles = { ...(game?.game_state?.doubles_counts || {}), [user.id]: d.isDouble ? d.newDoublesCount : 0 }
-    await clearPendingAction({ doubles_counts: updatedDoubles })
-    if (nextModal) setModal({ ...nextModal, isDouble: d.isDouble })
-    else if (d.isDouble) setDiceResult(null)
-    else await nextTurn()
+
+    if (myMoney === 0 && debtAmount > 0) {
+      await addLog(`ne peut pas payer ${formatMoney(debtAmount)} — dernière chance !`, debtAmount)
+      const { pending_action, ...rest } = game?.game_state || {}
+      await supabase.from('games').update({ game_state: {
+        ...rest,
+        doubles_counts: updatedDoubles,
+        pending_bankruptcy: { player_id: user.id, player_name: freshMe.users?.username, player_color: freshMe.users?.color, debt: debtAmount }
+      }}).eq('id', game.id)
+    } else {
+      await clearPendingAction({ doubles_counts: updatedDoubles })
+      if (nextModal) setModal({ ...nextModal, isDouble: d.isDouble })
+      else if (d.isDouble) setDiceResult(null)
+      else await nextTurn()
+    }
     await loadGame(game.id)
   }
 
@@ -1039,6 +1071,15 @@ export default function GamePage() {
         formatMoney={formatMoney}
       />
 
+      <BankruptcyOverlay
+        bankruptcy={game?.game_state?.pending_bankruptcy}
+        players={players} myPlayer={myPlayer} titles={titles} user={user}
+        onForfeit={declareForfeit}
+        onSurvive={surviveBankruptcy}
+        onProposeTrade={proposeTrade}
+        formatMoney={formatMoney}
+      />
+
       {phase === 'finished' && (() => {
         const winner = players.find(p => !p.bankrupt)
         const isWinner = winner && String(winner.user_id) === String(user?.id)
@@ -1089,6 +1130,75 @@ export default function GamePage() {
         )
       })()}
     </div>
+  )
+}
+
+// ============================================================
+// BANKRUPTCY OVERLAY
+// ============================================================
+function BankruptcyOverlay({ bankruptcy, players, myPlayer, titles, user, onForfeit, onSurvive, onProposeTrade, formatMoney }) {
+  const [showTrade, setShowTrade] = useState(false)
+  if (!bankruptcy) return null
+  const isVictim  = String(bankruptcy.player_id) === String(user?.id)
+  const victimColor = PLAYER_COLORS[bankruptcy.player_color] || '#e74c3c'
+  const currentMoney = myPlayer?.money || 0
+
+  if (!isVictim) {
+    return (
+      <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:1800, display:'flex', justifyContent:'center', padding:'12px', pointerEvents:'none' }}>
+        <div style={{ background:'#1a0a00', border:'1px solid #e74c3c55', borderRadius:'10px', padding:'12px 24px', color:'#888', fontSize:'13px', fontFamily:"'Oswald',sans-serif", pointerEvents:'auto' }}>
+          ⏳ <span style={{ color:victimColor }}>{bankruptcy.player_name}</span> cherche une solution — en attente...
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div style={{ position:'fixed', inset:0, zIndex:2200, background:'rgba(0,0,0,0.94)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+        <div style={{ background:'#1a0a00', border:'2px solid #e74c3c', borderRadius:'16px', padding:'28px', maxWidth:'500px', width:'100%', boxShadow:'0 0 60px #e74c3c44' }}>
+          <div style={{ textAlign:'center', marginBottom:'20px' }}>
+            <div style={{ fontSize:'48px', marginBottom:'8px' }}>💸</div>
+            <div style={{ color:'#e74c3c', fontSize:'28px', fontWeight:900, fontFamily:"'Oswald',sans-serif" }}>DERNIÈRE CHANCE</div>
+            <div style={{ color:'#aaa', fontSize:'13px', marginTop:'6px' }}>Vous n'avez plus d'argent.</div>
+            {bankruptcy.debt > 0 && (
+              <div style={{ marginTop:'12px', padding:'10px 16px', background:'rgba(231,76,60,0.1)', border:'1px solid #e74c3c44', borderRadius:'8px' }}>
+                <div style={{ color:'#888', fontSize:'11px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Somme due à la banque</div>
+                <div style={{ color:'#e74c3c', fontSize:'22px', fontWeight:700, marginTop:'2px' }}>{formatMoney(bankruptcy.debt)}</div>
+              </div>
+            )}
+            {currentMoney > 0 && (
+              <div style={{ marginTop:'10px', color:'#27ae60', fontSize:'13px' }}>
+                Vous avez maintenant {formatMoney(currentMoney)} en caisse.
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => setShowTrade(true)}
+            style={{ width:'100%', padding:'12px', marginBottom:'10px', background:'#0d2a1a', border:'2px solid #27ae6055', borderRadius:'8px', color:'#27ae60', cursor:'pointer', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
+            🤝 Proposer un échange (obtenir des fonds)
+          </button>
+
+          {currentMoney > 0 && (
+            <button onClick={onSurvive}
+              style={{ width:'100%', padding:'12px', marginBottom:'10px', background:'#27ae60', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'700' }}>
+              ✅ Payer et continuer
+            </button>
+          )}
+
+          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'4px' }}>
+            <button onClick={onForfeit}
+              style={{ padding:'10px 20px', background:'#2a0a0a', border:'1px solid #e74c3c66', borderRadius:'8px', color:'#e74c3c', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif" }}>
+              🏳️ Déclarer forfait
+            </button>
+          </div>
+        </div>
+      </div>
+      {showTrade && (
+        <TradeModal players={players} myPlayer={myPlayer} titles={titles} user={user}
+          onClose={() => setShowTrade(false)} onSend={onProposeTrade} />
+      )}
+    </>
   )
 }
 
