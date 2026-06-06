@@ -392,6 +392,10 @@ export default function GamePage() {
       setPlayers(ps)
       const me = ps.find(p => p.user_id === user?.id)
       setMyPlayer(me || null)
+      if (g.status === 'playing' && ps.filter(p => !p.bankrupt).length <= 1) {
+        await supabase.from('games').update({ status: 'finished' }).eq('id', gameId)
+        setPhase('finished')
+      }
     }
     await loadTitles(gameId)
     await loadLogs(gameId)
