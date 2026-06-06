@@ -1489,6 +1489,33 @@ function MyTitles({ titles, getRoyalties, getTotalPercentage }) {
                     </div>
                   )
                 })}
+                <div style={{ borderTop:'1px solid #2a1a00', marginTop:'4px', paddingTop:'6px', display:'flex', flexDirection:'column', gap:'3px' }}>
+                  <div style={{ color:'#555', fontSize:'9px', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'2px' }}>Royalties par palier</div>
+                  {[
+                    { label:'30%', threshold:30 },
+                    { label:'50%', threshold:50 },
+                    { label:'70%', threshold:70 },
+                    { label:'90%', threshold:90 },
+                  ].map(({ label, threshold }) => {
+                    const amount = getRoyaltyAmount(prod, threshold)
+                    const isCurrent = (threshold === 30 && pct >= 30 && pct < 50)
+                                   || (threshold === 50 && pct >= 50 && pct < 70)
+                                   || (threshold === 70 && pct >= 70 && pct < 90)
+                                   || (threshold === 90 && pct >= 90)
+                    const isPast   = pct >= threshold && !isCurrent
+                    const isFuture = pct < threshold
+                    return (
+                      <div key={label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', opacity: isFuture ? 0.45 : 1 }}>
+                        <span style={{ fontSize:'10px', color: isCurrent ? '#c8962a' : isPast ? '#555' : '#888' }}>
+                          {isCurrent ? '▶ ' : isPast ? '✓ ' : '  '}{label}
+                        </span>
+                        <span style={{ fontSize:'10px', fontWeight: isCurrent ? 'bold' : 'normal', color: isCurrent ? '#c8962a' : isPast ? '#555' : '#888' }}>
+                          {amount > 0 ? (amount/1000000).toFixed(1)+'M F' : '–'}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
