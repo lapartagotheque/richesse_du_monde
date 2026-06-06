@@ -1016,6 +1016,56 @@ export default function GamePage() {
         onCancel={clearTradeProposal}
         formatMoney={formatMoney}
       />
+
+      {phase === 'finished' && (() => {
+        const winner = players.find(p => !p.bankrupt)
+        const isWinner = winner && String(winner.user_id) === String(user?.id)
+        const winnerColor = PLAYER_COLORS[winner?.users?.color] || '#c8962a'
+        const sorted = [...players].sort((a, b) => b.money - a.money)
+        return (
+          <div style={{ position:'fixed', inset:0, zIndex:3000, background:'rgba(0,0,0,0.96)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+            <div style={{ background:'#1a0a00', border:`3px solid ${isWinner ? '#c8962a' : '#333'}`, borderRadius:'20px', padding:'40px 36px', maxWidth:'480px', width:'100%', textAlign:'center', boxShadow: isWinner ? '0 0 80px #c8962a66' : 'none' }}>
+              {isWinner ? (
+                <>
+                  <div style={{ fontSize:'64px', marginBottom:'8px' }}>🏆</div>
+                  <div style={{ color:'#c8962a', fontSize:'36px', fontWeight:900, fontFamily:"'Oswald',sans-serif", letterSpacing:'0.06em', textShadow:'0 0 30px #c8962a88' }}>VICTOIRE !</div>
+                  <div style={{ color:'#aaa', fontSize:'15px', marginTop:'8px' }}>Tu as dominé toutes les richesses du monde.</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize:'52px', marginBottom:'8px' }}>💀</div>
+                  <div style={{ color:'#888', fontSize:'28px', fontWeight:700, fontFamily:"'Oswald',sans-serif" }}>DÉFAITE</div>
+                  <div style={{ color:'#555', fontSize:'14px', marginTop:'8px' }}>
+                    <span style={{ color:winnerColor }}>{winner?.users?.username}</span> remporte la partie.
+                  </div>
+                </>
+              )}
+
+              <div style={{ marginTop:'28px', display:'flex', flexDirection:'column', gap:'8px' }}>
+                {sorted.map((p, i) => {
+                  const col = PLAYER_COLORS[p.users?.color] || '#888'
+                  return (
+                    <div key={p.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 14px', background: i===0?'rgba(200,150,42,0.12)':'rgba(255,255,255,0.03)', border:`1px solid ${i===0?'#c8962a44':'#2a1a00'}`, borderRadius:'10px' }}>
+                      <span style={{ fontSize:'18px' }}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'💀'}</span>
+                      <div style={{ flex:1, textAlign:'left' }}>
+                        <div style={{ color:col, fontSize:'14px', fontWeight:700 }}>{p.users?.username}{String(p.user_id)===String(user?.id)?' (moi)':''}</div>
+                        <div style={{ color:'#555', fontSize:'12px' }}>{formatMoney(p.money)}</div>
+                      </div>
+                      {p.bankrupt && <span style={{ color:'#e74c3c', fontSize:'11px' }}>faillite</span>}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {user?.role === 'admin' && (
+                <button onClick={resetGame} style={{ marginTop:'24px', width:'100%', padding:'12px', background:'#c8962a', border:'none', borderRadius:'10px', color:'white', cursor:'pointer', fontSize:'16px', fontFamily:"'Oswald',sans-serif", fontWeight:700 }}>
+                  🔄 Nouvelle partie
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
