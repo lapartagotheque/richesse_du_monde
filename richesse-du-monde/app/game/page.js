@@ -2124,18 +2124,49 @@ function Modal({ modal, myPlayer, titles, players, user, onBuy, onActualite, onJ
 function MarketModal({ titles, onClose }) {
   const [filter, setFilter] = useState('')
   const [onlyAvailable, setOnlyAvailable] = useState(false)
+  const [byCountry, setByCountry] = useState(false)
+
+  // Ordre des cases du plateau (uniquement celles qui ont des ressources)
+  const caseOrder = []
+  const seenCases = new Set()
+  LISTE.forEach(cas => {
+    if (cas.label && !seenCases.has(cas.label) && AVAILABLE_TITLES.some(t => t.country === cas.label)) {
+      seenCases.add(cas.label)
+      caseOrder.push(cas.label)
+    }
+  })
 
   const rows = []
-  let lastProd = null
-  const sorted = [...AVAILABLE_TITLES].sort((a, b) => a.production.localeCompare(b.production))
-  sorted.forEach(t => {
-    const owned = titles.find(o => o.production === t.production && o.region === t.region)
-    const owner = owned ? owned.users : null
-    if (filter && !t.production.toLowerCase().includes(filter.toLowerCase())) return
-    if (onlyAvailable && owner) return
-    if (t.production !== lastProd) { rows.push({ isHeader: true, prod: t.production }); lastProd = t.production }
-    rows.push({ isHeader: false, ...t, owner })
-  })
+  const lf = filter.toLowerCase()
+
+  if (byCountry) {
+    caseOrder.forEach(caseName => {
+      const caseTitles = AVAILABLE_TITLES.filter(t => t.country === caseName)
+      const visible = caseTitles.filter(t => {
+        const owned = titles.find(o => o.production === t.production && o.region === t.region)
+        if (onlyAvailable && owned) return false
+        if (filter && !t.production.toLowerCase().includes(lf) && !caseName.toLowerCase().includes(lf)) return false
+        return true
+      })
+      if (!visible.length) return
+      rows.push({ isHeader: true, prod: caseName })
+      visible.forEach(t => {
+        const owned = titles.find(o => o.production === t.production && o.region === t.region)
+        rows.push({ isHeader: false, ...t, owner: owned?.users || null, label: t.production })
+      })
+    })
+  } else {
+    let lastProd = null
+    const sorted = [...AVAILABLE_TITLES].sort((a, b) => a.production.localeCompare(b.production))
+    sorted.forEach(t => {
+      const owned = titles.find(o => o.production === t.production && o.region === t.region)
+      const owner = owned ? owned.users : null
+      if (filter && !t.production.toLowerCase().includes(lf)) return
+      if (onlyAvailable && owner) return
+      if (t.production !== lastProd) { rows.push({ isHeader: true, prod: t.production }); lastProd = t.production }
+      rows.push({ isHeader: false, ...t, owner })
+    })
+  }
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:3000, padding:'20px' }} onClick={onClose}>
@@ -2146,12 +2177,16 @@ function MarketModal({ titles, onClose }) {
             <span style={{ color:'#c8962a', fontSize:'20px', fontWeight:'bold' }}>📦 Marché des ressources</span>
             <button onClick={onClose} style={{ background:'#2a1400', border:'1px solid #555', borderRadius:'6px', color:'white', cursor:'pointer', padding:'4px 10px', fontSize:'15px' }}>✕</button>
           </div>
-          <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
+          <div style={{ display:'flex', gap:'10px', alignItems:'center', flexWrap:'wrap' }}>
             <input placeholder="Filtrer..." value={filter} onChange={e => setFilter(e.target.value)}
-              style={{ flex:1, padding:'6px 12px', background:'#2a1400', border:'1px solid #555', borderRadius:'6px', color:'white', fontSize:'14px' }} />
+              style={{ flex:1, minWidth:'120px', padding:'6px 12px', background:'#2a1400', border:'1px solid #555', borderRadius:'6px', color:'white', fontSize:'14px' }} />
             <label style={{ color:'white', fontSize:'13px', cursor:'pointer', display:'flex', gap:'6px', alignItems:'center' }}>
               <input type="checkbox" checked={onlyAvailable} onChange={e => setOnlyAvailable(e.target.checked)} />
               Disponibles seulement
+            </label>
+            <label style={{ color:'#c8962a', fontSize:'13px', cursor:'pointer', display:'flex', gap:'6px', alignItems:'center' }}>
+              <input type="checkbox" checked={byCountry} onChange={e => setByCountry(e.target.checked)} />
+              Par pays
             </label>
           </div>
         </div>
@@ -2160,8 +2195,17 @@ function MarketModal({ titles, onClose }) {
           {rows.length === 0 && <p style={{ color:'#888', textAlign:'center', padding:'30px' }}>Aucune ressource trouvée</p>}
           {rows.map((row, i) => row.isHeader
             ? (
-              <div key={'h' + row.prod} style={{ padding:'8px 20px', background:'#2a1200', marginTop: i > 0 ? '6px' : 0 }}>
+              <div key={'h' + i + row.prod} style={{ padding:'8px 20px', background:'#2a1200', marginTop: i > 0 ? '6px' : 0 }}>
                 <span style={{ color:'#c8962a', fontWeight:'bold', fontSize:'15px' }}>{row.prod}</span>
+              </div>
+            ) : byCountry ? (
+              <div key={row.production + row.region} style={{ padding:'6px 20px 6px 30px', borderBottom:'1px solid #1e0a00' }}>
+                <span style={{ color:'white', fontSize:'13px' }}>{row.production}</span>
+                <span style={{ color:'#999', fontSize:'12px' }}> · {row.region} · {row.percentage}% · </span>
+                {row.owner
+                  ? <span style={{ color: PLAYER_COLORS[row.owner.color] || '#c8962a', fontSize:'13px', fontWeight:'bold' }}>● {row.owner.username}</span>
+                  : <span style={{ color:'#27ae60', fontSize:'13px', fontWeight:'bold' }}>✔ Disponible</span>
+                }
               </div>
             ) : (
               <div key={row.production + row.region} style={{ padding:'6px 20px 6px 30px', borderBottom:'1px solid #1e0a00' }}>
