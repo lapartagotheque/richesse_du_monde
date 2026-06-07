@@ -1879,12 +1879,12 @@ const AVAILABLE_TITLES = [
 
 function Modal({ modal, myPlayer, titles, players, user, onBuy, onActualite, onJoker, onClose, formatMoney }) {
   const [selected, setSelected] = useState([])
-  const [viewPlayerId, setViewPlayerId] = useState(user?.id)
+  const [viewPlayerId, setViewPlayerId] = useState(String(user?.id ?? ''))
   const myTitles = titles.filter(t => t.user_id === user?.id)
   const totalSelected = selected.reduce((s, t) => s + t.price, 0)
   const canAfford = myPlayer && totalSelected <= myPlayer.money
 
-  const viewTitles = titles.filter(t => t.user_id === viewPlayerId)
+  const viewTitles = titles.filter(t => String(t.user_id) === viewPlayerId)
   const viewByProd = {}
   viewTitles.forEach(t => { viewByProd[t.production] = (viewByProd[t.production] || 0) + t.percentage })
 
@@ -1949,8 +1949,8 @@ function Modal({ modal, myPlayer, titles, players, user, onBuy, onActualite, onJ
                 style={{ width:'100%', padding:'5px 8px', background:'#1a0a00', border:'1px solid #555', borderRadius:'6px', color:'white', fontSize:'13px', cursor:'pointer' }}
               >
                 {(players || []).map(p => (
-                  <option key={p.user_id} value={p.user_id}>
-                    {p.users?.username}{p.user_id === user?.id ? ' (moi)' : ''}
+                  <option key={p.user_id} value={String(p.user_id)}>
+                    {p.users?.username}{String(p.user_id) === String(user?.id) ? ' (moi)' : ''}
                   </option>
                 ))}
               </select>
