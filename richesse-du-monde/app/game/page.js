@@ -503,6 +503,19 @@ export default function GamePage() {
     await addLog(`a accepté l'échange de ${tp.from_username}`, 0)
   }
 
+  async function sellTitlesToBankLastChance(titlesToSell) {
+    if (!myPlayer || !titlesToSell.length) return
+    let earned = 0
+    for (const t of titlesToSell) {
+      const sellPrice = Math.floor((t.buy_price || 0) / 2)
+      earned += sellPrice
+      await supabase.from('player_titles').delete().eq('id', t.id)
+    }
+    if (earned > 0) await updateMoney(myPlayer.id, earned)
+    await addLog(`vend ${titlesToSell.length} titre(s) à la banque pour ${formatMoney(earned)}`, earned)
+    await loadTitles(game.id)
+  }
+
   async function declareForfeit() {
     if (!myPlayer) return
     await supabase.from('game_players').update({ bankrupt: true, money: 0 }).eq('id', myPlayer.id)
@@ -1095,6 +1108,7 @@ export default function GamePage() {
         onForfeit={declareForfeit}
         onSurvive={surviveBankruptcy}
         onProposeTrade={proposeTrade}
+        onSellTitles={sellTitlesToBankLastChance}
         formatMoney={formatMoney}
       />
 
@@ -1154,12 +1168,25 @@ export default function GamePage() {
 // ============================================================
 // BANKRUPTCY OVERLAY
 // ============================================================
-function BankruptcyOverlay({ bankruptcy, players, myPlayer, titles, user, onForfeit, onSurvive, onProposeTrade, formatMoney }) {
+function BankruptcyOverlay({ bankruptcy, players, myPlayer, titles, user, onForfeit, onSurvive, onProposeTrade, onSellTitles, formatMoney }) {
   const [showTrade, setShowTrade] = useState(false)
+  const [showSell, setShowSell]   = useState(false)
+  const [toSell, setToSell]       = useState([])
+
   if (!bankruptcy) return null
-  const isVictim  = String(bankruptcy.player_id) === String(user?.id)
+  const isVictim    = String(bankruptcy.player_id) === String(user?.id)
   const victimColor = PLAYER_COLORS[bankruptcy.player_color] || '#e74c3c'
   const currentMoney = myPlayer?.money || 0
+  const myTitles = titles.filter(t => String(t.user_id) === String(user?.id))
+  const creditorDebts = bankruptcy.creditors || []
+  const creditorsTotal = creditorDebts.reduce((s, c) => s + c.amount, 0)
+  const bankDebt = Math.max(0, bankruptcy.debt - creditorsTotal)
+  const sellTotal = toSell.reduce((s, t) => s + Math.floor((t.buy_price || 0) / 2), 0)
+
+  function toggleSell(t) {
+    if (toSell.some(s => s.id === t.id)) setToSell(toSell.filter(s => s.id !== t.id))
+    else setToSell([...toSell, t])
+  }
 
   if (!isVictim) {
     return (
@@ -1173,33 +1200,83 @@ function BankruptcyOverlay({ bankruptcy, players, myPlayer, titles, user, onForf
 
   return (
     <>
-      <div style={{ position:'fixed', inset:0, zIndex:2200, background:'rgba(0,0,0,0.94)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+      <div style={{ position:'fixed', inset:0, zIndex:2200, background:'rgba(0,0,0,0.94)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px', overflowY:'auto' }}>
         <div style={{ background:'#1a0a00', border:'2px solid #e74c3c', borderRadius:'16px', padding:'28px', maxWidth:'500px', width:'100%', boxShadow:'0 0 60px #e74c3c44' }}>
-          <div style={{ textAlign:'center', marginBottom:'20px' }}>
+
+          <div style={{ textAlign:'center', marginBottom:'16px' }}>
             <div style={{ fontSize:'48px', marginBottom:'8px' }}>💸</div>
             <div style={{ color:'#e74c3c', fontSize:'28px', fontWeight:900, fontFamily:"'Oswald',sans-serif" }}>DERNIÈRE CHANCE</div>
-            <div style={{ color:'#aaa', fontSize:'13px', marginTop:'6px' }}>Vous n'avez plus d'argent.</div>
-            {bankruptcy.debt > 0 && (
-              <div style={{ marginTop:'12px', padding:'10px 16px', background:'rgba(231,76,60,0.1)', border:'1px solid #e74c3c44', borderRadius:'8px' }}>
-                <div style={{ color:'#888', fontSize:'11px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Somme due à la banque</div>
-                <div style={{ color:'#e74c3c', fontSize:'22px', fontWeight:700, marginTop:'2px' }}>{formatMoney(bankruptcy.debt)}</div>
+            <div style={{ color:'#aaa', fontSize:'13px', marginTop:'4px' }}>Vous n'avez plus d'argent.</div>
+          </div>
+
+          {/* Détail des dettes */}
+          <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginBottom:'16px' }}>
+            {creditorDebts.map((c, i) => (
+              <div key={i} style={{ padding:'10px 14px', background:'rgba(231,76,60,0.1)', border:'1px solid #e74c3c44', borderRadius:'8px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ color:'#aaa', fontSize:'12px' }}>Vous devez encore à <strong style={{ color:'#fff' }}>{c.player_name}</strong></span>
+                <span style={{ color:'#e74c3c', fontSize:'16px', fontWeight:700 }}>{formatMoney(c.amount)}</span>
+              </div>
+            ))}
+            {bankDebt > 0 && (
+              <div style={{ padding:'10px 14px', background:'rgba(231,76,60,0.1)', border:'1px solid #e74c3c44', borderRadius:'8px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ color:'#aaa', fontSize:'12px' }}>Vous devez encore à <strong style={{ color:'#fff' }}>la banque</strong></span>
+                <span style={{ color:'#e74c3c', fontSize:'16px', fontWeight:700 }}>{formatMoney(bankDebt)}</span>
               </div>
             )}
             {currentMoney > 0 && (
-              <div style={{ marginTop:'10px', color:'#27ae60', fontSize:'13px' }}>
-                Vous avez maintenant {formatMoney(currentMoney)} en caisse.
+              <div style={{ color:'#27ae60', fontSize:'12px', textAlign:'center', marginTop:'2px' }}>
+                En caisse : {formatMoney(currentMoney)}
               </div>
             )}
           </div>
 
+          {/* Échange */}
           <button onClick={() => setShowTrade(true)}
-            style={{ width:'100%', padding:'12px', marginBottom:'10px', background:'#0d2a1a', border:'2px solid #27ae6055', borderRadius:'8px', color:'#27ae60', cursor:'pointer', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
-            🤝 Proposer un échange (obtenir des fonds)
+            style={{ width:'100%', padding:'12px', marginBottom:'8px', background:'#0d2a1a', border:'2px solid #27ae6055', borderRadius:'8px', color:'#27ae60', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
+            🤝 Proposer un échange
           </button>
 
+          {/* Vendre ressources */}
+          <button onClick={() => setShowSell(!showSell)}
+            style={{ width:'100%', padding:'12px', marginBottom:'8px', background:'#1a1000', border:`2px solid ${showSell ? '#c8962a99' : '#c8962a44'}`, borderRadius:'8px', color:'#c8962a', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
+            💰 Vendre des ressources à la banque (50% du prix) {showSell ? '▲' : '▼'}
+          </button>
+
+          {showSell && (
+            <div style={{ background:'rgba(0,0,0,0.3)', border:'1px solid #c8962a33', borderRadius:'8px', padding:'12px', marginBottom:'8px' }}>
+              {myTitles.length === 0
+                ? <div style={{ color:'#555', fontSize:'12px', textAlign:'center', padding:'8px 0' }}>Aucune ressource à vendre</div>
+                : (
+                  <>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'5px', maxHeight:'180px', overflowY:'auto', marginBottom:'8px' }}>
+                      {myTitles.map((t, i) => {
+                        const sellPrice = Math.floor((t.buy_price || 0) / 2)
+                        const selected  = toSell.some(s => s.id === t.id)
+                        return (
+                          <label key={i} style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', padding:'5px 8px', background: selected ? 'rgba(200,150,42,0.1)' : 'transparent', borderRadius:'5px' }}>
+                            <input type='checkbox' checked={selected} onChange={() => toggleSell(t)} />
+                            <span style={{ flex:1, color:'#ccc', fontSize:'12px' }}>{t.production} · {t.region} ({t.percentage}%)</span>
+                            <span style={{ color:'#c8962a', fontSize:'12px', fontWeight:'bold', whiteSpace:'nowrap' }}>{formatMoney(sellPrice)}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    {toSell.length > 0 && (
+                      <button onClick={() => { onSellTitles(toSell); setToSell([]) }}
+                        style={{ width:'100%', padding:'9px', background:'#c8962a', border:'none', borderRadius:'6px', color:'white', cursor:'pointer', fontSize:'13px', fontFamily:"'Oswald',sans-serif", fontWeight:'700' }}>
+                        Vendre {toSell.length} titre(s) — +{formatMoney(sellTotal)}
+                      </button>
+                    )}
+                  </>
+                )
+              }
+            </div>
+          )}
+
+          {/* Continuer si assez */}
           {currentMoney >= bankruptcy.debt && (
             <button onClick={onSurvive}
-              style={{ width:'100%', padding:'12px', marginBottom:'10px', background:'#27ae60', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'700' }}>
+              style={{ width:'100%', padding:'12px', marginBottom:'8px', background:'#27ae60', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'700' }}>
               ✅ Payer et continuer ({formatMoney(bankruptcy.debt)})
             </button>
           )}
