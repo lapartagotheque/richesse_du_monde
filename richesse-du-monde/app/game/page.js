@@ -514,8 +514,23 @@ export default function GamePage() {
   }
 
   async function surviveBankruptcy() {
-    if (!myPlayer) return
-    await addLog('a trouvé des fonds et survit à la faillite !', 0)
+    const bp = game?.game_state?.pending_bankruptcy
+    if (!myPlayer || !bp) return
+    const { data: freshPlayers } = await supabase.from('game_players').select('*').eq('game_id', game.id)
+    const freshMe = freshPlayers?.find(p => p.user_id === user.id)
+    if (!freshMe) return
+    let moneyLeft = freshMe.money
+    for (const c of (bp.creditors || [])) {
+      const toPay = Math.min(moneyLeft, c.amount)
+      if (toPay > 0) {
+        moneyLeft -= toPay
+        const creditor = freshPlayers?.find(p => p.id === c.player_id)
+        if (creditor) await supabase.from('game_players').update({ money: creditor.money + toPay }).eq('id', creditor.id)
+        await addLog(`rembourse ${formatMoney(toPay)} de royalties à ${c.player_name}`, toPay)
+      }
+    }
+    await supabase.from('game_players').update({ money: moneyLeft }).eq('id', freshMe.id)
+    await addLog('a remboursé ses dettes et survit !', 0)
     const { pending_bankruptcy, ...rest } = game?.game_state || {}
     await supabase.from('games').update({ game_state: rest }).eq('id', game.id)
     await nextTurn()
@@ -654,15 +669,18 @@ export default function GamePage() {
       await addLog(`a fait double — paie ${formatMoney(d.doublePenalty)} à la banque`, d.doublePenalty)
     }
 
+    const creditorDebts = []
     if (d.royaltyPayments?.length > 0) {
       for (const r of d.royaltyPayments) {
         const amount = useJoker ? Math.floor(r.amount / 2) : r.amount
         const paid = Math.min(myMoney, amount)
-        debtAmount += amount - paid
-        myMoney = Math.max(0, myMoney - amount)
+        const unpaid = amount - paid
+        debtAmount += unpaid
+        myMoney = Math.max(0, myMoney - paid)
         const creditor = freshPlayers?.find(p => p.id === r.to_id)
-        if (creditor) await supabase.from('game_players').update({ money: creditor.money + amount }).eq('id', r.to_id)
-        await addLog(`paie ${formatMoney(amount)} de royalties à ${r.to_name} (${r.resource})${useJoker ? ' 🃏 Joker' : ''}`, amount)
+        if (creditor && paid > 0) await supabase.from('game_players').update({ money: creditor.money + paid }).eq('id', r.to_id)
+        if (unpaid > 0) creditorDebts.push({ player_id: r.to_id, player_name: r.to_name, amount: unpaid })
+        await addLog(`paie ${formatMoney(paid)}${unpaid > 0 ? ` (manque ${formatMoney(unpaid)})` : ''} de royalties à ${r.to_name} (${r.resource})${useJoker ? ' 🃏 Joker' : ''}`, paid)
       }
       if (useJoker) {
         await supabase.from('game_players').update({ has_joker: false }).eq('id', freshMe.id)
@@ -709,7 +727,7 @@ export default function GamePage() {
       await supabase.from('games').update({ game_state: {
         ...rest,
         doubles_counts: updatedDoubles,
-        pending_bankruptcy: { player_id: user.id, player_name: freshMe.users?.username, player_color: freshMe.users?.color, debt: debtAmount }
+        pending_bankruptcy: { player_id: user.id, player_name: freshMe.users?.username, player_color: freshMe.users?.color, debt: debtAmount, creditors: creditorDebts }
       }}).eq('id', game.id)
     } else {
       await clearPendingAction({ doubles_counts: updatedDoubles })
@@ -1179,10 +1197,10 @@ function BankruptcyOverlay({ bankruptcy, players, myPlayer, titles, user, onForf
             🤝 Proposer un échange (obtenir des fonds)
           </button>
 
-          {currentMoney > 0 && (
+          {currentMoney >= bankruptcy.debt && (
             <button onClick={onSurvive}
               style={{ width:'100%', padding:'12px', marginBottom:'10px', background:'#27ae60', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'700' }}>
-              ✅ Payer et continuer
+              ✅ Payer et continuer ({formatMoney(bankruptcy.debt)})
             </button>
           )}
 
