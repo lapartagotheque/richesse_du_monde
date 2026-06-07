@@ -1398,6 +1398,7 @@ function TradeOverlay({ proposal, players, myPlayer, user, onAccept, onDecline, 
 // ============================================================
 function PendingActionOverlay({ pendingAction, currentUserId, onConfirm, hasJoker }) {
   const [useJoker, setUseJoker] = useState(false)
+  useEffect(() => { setUseJoker(false) }, [pendingAction])
   if (!pendingAction) return null
   const isMyAction = pendingAction.player_id === currentUserId
   const color = PLAYER_COLORS[pendingAction.player_color] || '#c8962a'
