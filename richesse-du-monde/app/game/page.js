@@ -1637,7 +1637,7 @@ function Board({ players, myPlayer, currentPlayerId, animPositions, flippedCard 
               <img key={p.id} className="pion" title={p.users?.username}
                 src={PION_IMAGES[p.users?.color] || '/pions/rouge.png'}
                 style={{
-                  width: 48, height: 48,
+                  width: 96, height: 96,
                   objectFit: 'contain',
                   flexShrink: 0,
                   filter: currentPlayerId === p.user_id
