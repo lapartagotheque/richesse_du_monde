@@ -1571,22 +1571,22 @@ function ActualiteCard({ card }) {
       {/* Superposition flex-colonne calée sur les 3 zones du PNG */}
       <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
         {/* espace avant zone 1 */}
-        <div style={{ flex:'0 0 6.5%' }}/>
-        {/* zone 1 : ~15.4% de hauteur */}
-        <div style={{ flex:'0 0 15.4%', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 10%' }}>
-          <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:15, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
+        <div style={{ flex:'0 0 7%' }}/>
+        {/* zone 1 : ~26% de hauteur */}
+        <div style={{ flex:'0 0 26%', display:'flex', alignItems:'center', justifyContent:'center', paddingLeft:'10%', paddingRight:'10%' }}>
+          <span style={{ display:'block', width:'100%', textAlign:'center', fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:15, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
         </div>
-        {/* écart entre zone 1 et zone 2 */}
-        <div style={{ flex:'0 0 4.2%' }}/>
-        {/* zone 2 : ~42% de hauteur */}
-        <div style={{ flex:'0 0 42%', display:'flex', alignItems:'center', justifyContent:'center', padding:'2% 13%' }}>
-          <p style={{ margin:0, padding:0, fontSize:11.5, color:'#cc0000', textAlign:'center', lineHeight:1.55, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
+        {/* écart zone 1→2 */}
+        <div style={{ flex:'0 0 2.5%' }}/>
+        {/* zone 2 : ~38% de hauteur */}
+        <div style={{ flex:'0 0 38%', display:'flex', alignItems:'center', justifyContent:'center', paddingLeft:'14%', paddingRight:'14%' }}>
+          <p style={{ margin:0, padding:0, width:'100%', fontSize:11.5, color:'#cc0000', textAlign:'center', lineHeight:1.55, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
         </div>
-        {/* écart entre zone 2 et zone 3 */}
-        <div style={{ flex:'0 0 4.1%' }}/>
-        {/* zone 3 : ~20.7% de hauteur */}
-        <div style={{ flex:'0 0 20.7%', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 10%' }}>
-          <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor }}>{amtText}</span>
+        {/* écart zone 2→3 */}
+        <div style={{ flex:'0 0 2.5%' }}/>
+        {/* zone 3 : ~22% de hauteur */}
+        <div style={{ flex:'0 0 22%', display:'flex', alignItems:'center', justifyContent:'center', paddingLeft:'10%', paddingRight:'10%' }}>
+          <span style={{ display:'block', width:'100%', textAlign:'center', fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor }}>{amtText}</span>
         </div>
         {/* espace bas */}
         <div style={{ flex:1 }}/>
