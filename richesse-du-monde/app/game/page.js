@@ -1568,17 +1568,17 @@ function ActualiteCard({ card }) {
   return (
     <div style={{ position:'relative', width:240, height:316, margin:'0 auto 16px', flexShrink:0 }}>
       <img src="/face_actualite.png" alt="Actualité" style={{ width:'100%', height:'100%', objectFit:'fill', display:'block' }} />
-      {/* Zone titre */}
-      <div style={{ position:'absolute', top:'8%', left:'9%', right:'9%', height:'14%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:17, color:'#cc0000', letterSpacing:'0.12em', textTransform:'uppercase' }}>Actualité</span>
+      {/* Zone titre (zone 1 intérieur : ~6% à 27%) */}
+      <div style={{ position:'absolute', top:'6%', left:'9%', right:'9%', height:'21%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
       </div>
-      {/* Zone texte principal */}
-      <div style={{ position:'absolute', top:'26%', left:'10%', right:'10%', height:'42%', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-        <p style={{ margin:0, padding:0, width:'100%', fontSize:11, color:'#cc0000', textAlign:'center', lineHeight:1.6, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
+      {/* Zone texte principal (zone 2 intérieur : ~30% à 71%) */}
+      <div style={{ position:'absolute', top:'30%', left:'11%', right:'11%', height:'41%', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+        <p style={{ margin:0, padding:0, width:'100%', fontSize:12, color:'#cc0000', textAlign:'center', lineHeight:1.5, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, wordBreak:'break-word', hyphens:'auto' }}>{card.text}</p>
       </div>
-      {/* Zone montant */}
-      <div style={{ position:'absolute', top:'72%', left:'9%', right:'9%', height:'21%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:18, color:amtColor }}>{amtText}</span>
+      {/* Zone montant (zone 3 intérieur : ~76% à 96%) */}
+      <div style={{ position:'absolute', top:'76%', left:'9%', right:'9%', height:'20%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:17, color:amtColor }}>{amtText}</span>
       </div>
     </div>
   )
