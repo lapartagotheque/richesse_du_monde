@@ -1577,7 +1577,7 @@ function ActualiteCard({ card }) {
         <p style={{ margin:0, fontSize:11.5, color:'#cc0000', textAlign:'center', lineHeight:1.6, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
       </div>
       {/* Montant — zone 3 : 60% → 95% */}
-      <div style={{ position:'absolute', top:'60%', bottom:'5%', left:'10%', right:'10%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ position:'absolute', top:'55%', bottom:'5%', left:'10%', right:'10%', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor, textAlign:'center' }}>{amtText}</span>
       </div>
     </div>
