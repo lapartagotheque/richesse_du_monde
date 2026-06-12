@@ -893,6 +893,16 @@ export default function GamePage() {
         <div style={{ display:'flex', gap: isMobile ? '6px' : '12px', alignItems:'center' }}>
           {!isMobile && <span style={{ color:'#aaa', fontSize:'14px' }}>Connecté : <strong style={{ color:'#c8962a' }}>{user?.username}</strong></span>}
           <button onClick={() => setShowMarket(true)} style={{ padding: isMobile ? '6px 10px' : '6px 14px', background:'#1a4a6b', border:'1px solid #2980b9', borderRadius:'6px', color:'#3498db', cursor:'pointer', fontSize:'13px', fontWeight:'600' }}>📦 {!isMobile && 'Ressources'}</button>
+          {phase === 'playing' && (() => {
+            const canTrade = isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal
+            return (
+              <button
+                onClick={() => canTrade && setShowTradeModal(true)}
+                disabled={!canTrade}
+                style={{ padding: isMobile ? '6px 10px' : '6px 14px', background: canTrade ? '#0d2a1a' : 'transparent', border: `1px solid ${canTrade ? '#27ae60' : '#333'}`, borderRadius:'6px', color: canTrade ? '#27ae60' : '#444', cursor: canTrade ? 'pointer' : 'not-allowed', fontSize:'13px', fontWeight:'600', transition:'all 0.2s' }}
+              >🤝 {!isMobile && 'Échange'}</button>
+            )
+          })()}
           {user?.role === 'admin' && (
             <button onClick={resetGame} style={{ padding: isMobile ? '6px 10px' : '6px 14px', background:'#c0392b', border:'none', borderRadius:'6px', color:'white', cursor:'pointer', fontSize:'13px' }}>🔄</button>
           )}
@@ -938,14 +948,6 @@ export default function GamePage() {
                 {!isMyTurn() && <div style={{ color:'white', fontSize:'13px', fontWeight:'bold' }}>{players.find(p => p.user_id === game?.current_player_id)?.users?.username || '...'}</div>}
               </div>
 
-              {isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal && (
-                <button
-                  onClick={() => setShowTradeModal(true)}
-                  style={{ width:'100%', padding:'10px', background:'#0d2a1a', border:'2px solid #27ae6055', borderRadius:'8px', color:'#27ae60', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600', marginBottom:'8px' }}
-                >
-                  🤝 Proposer un échange
-                </button>
-              )}
               {isMyTurn() && !modal && (
                 <button onClick={rollDice} disabled={rolling} className="roll-button" style={{ width:'100%' }}>
                   {rolling ? '🎲 ...' : '🎲 Lancer les dés'}
