@@ -1568,17 +1568,17 @@ function ActualiteCard({ card }) {
   return (
     <div style={{ position:'relative', width:240, height:316, margin:'0 auto 16px', flexShrink:0 }}>
       <img src="/face_actualite.png" alt="Actualité" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'fill' }} />
-      {/* ACTUALITÉ — centre de zone 1 ≈ 14% */}
-      <div style={{ position:'absolute', top:'14%', left:'10%', right:'10%', transform:'translateY(-50%)', textAlign:'center' }}>
-        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:15, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
+      {/* ACTUALITÉ — zone 1 : 4% → 32% */}
+      <div style={{ position:'absolute', top:'4%', bottom:'68%', left:'10%', right:'10%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:15, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase', textAlign:'center' }}>Actualité</span>
       </div>
-      {/* Texte — centre de zone 2 ≈ 50%, marges larges pour ne pas toucher les bords */}
-      <div style={{ position:'absolute', top:'50%', left:'16%', right:'16%', transform:'translateY(-50%)' }}>
+      {/* Texte — zone 2 : 32% → 72% */}
+      <div style={{ position:'absolute', top:'32%', bottom:'28%', left:'16%', right:'16%', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <p style={{ margin:0, fontSize:11.5, color:'#cc0000', textAlign:'center', lineHeight:1.6, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
       </div>
-      {/* Montant — centre de zone 3 ≈ 84% */}
-      <div style={{ position:'absolute', top:'84%', left:'10%', right:'10%', transform:'translateY(-50%)', textAlign:'center' }}>
-        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor }}>{amtText}</span>
+      {/* Montant — zone 3 : 72% → 95% */}
+      <div style={{ position:'absolute', top:'72%', bottom:'5%', left:'10%', right:'10%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor, textAlign:'center' }}>{amtText}</span>
       </div>
     </div>
   )
