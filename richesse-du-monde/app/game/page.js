@@ -893,16 +893,13 @@ export default function GamePage() {
         <div style={{ display:'flex', gap: isMobile ? '6px' : '12px', alignItems:'center' }}>
           {!isMobile && <span style={{ color:'#aaa', fontSize:'14px' }}>Connecté : <strong style={{ color:'#c8962a' }}>{user?.username}</strong></span>}
           <button onClick={() => setShowMarket(true)} style={{ padding: isMobile ? '6px 10px' : '6px 14px', background:'#1a4a6b', border:'1px solid #2980b9', borderRadius:'6px', color:'#3498db', cursor:'pointer', fontSize:'13px', fontWeight:'600' }}>📦 {!isMobile && 'Ressources'}</button>
-          {phase === 'playing' && (() => {
-            const canTrade = isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal
-            return (
-              <button
-                onClick={() => canTrade && setShowTradeModal(true)}
-                disabled={!canTrade}
-                style={{ padding: isMobile ? '6px 10px' : '6px 14px', background: canTrade ? '#0d2a1a' : 'transparent', border: `1px solid ${canTrade ? '#27ae60' : '#333'}`, borderRadius:'6px', color: canTrade ? '#27ae60' : '#444', cursor: canTrade ? 'pointer' : 'not-allowed', fontSize:'13px', fontWeight:'600', transition:'all 0.2s' }}
-              >🤝 {!isMobile && 'Échange'}</button>
-            )
-          })()}
+          {phase === 'playing' && (
+            <button
+              onClick={() => { if (isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal) setShowTradeModal(true) }}
+              disabled={!(isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal)}
+              style={{ padding: isMobile ? '6px 10px' : '6px 14px', background: (isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal) ? '#0d2a1a' : 'transparent', border: `1px solid ${(isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal) ? '#27ae60' : '#333'}`, borderRadius:'6px', color: (isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal) ? '#27ae60' : '#444', cursor: (isMyTurn() && !modal && !diceResult && !rolling && !game?.game_state?.trade_proposal) ? 'pointer' : 'not-allowed', fontSize:'13px', fontWeight:'600', transition:'all 0.2s' }}
+            >🤝 {!isMobile && 'Échange'}</button>
+          )}
           {user?.role === 'admin' && (
             <button onClick={resetGame} style={{ padding: isMobile ? '6px 10px' : '6px 14px', background:'#c0392b', border:'none', borderRadius:'6px', color:'white', cursor:'pointer', fontSize:'13px' }}>🔄</button>
           )}
