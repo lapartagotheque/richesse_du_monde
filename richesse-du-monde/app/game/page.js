@@ -277,27 +277,42 @@ const FIXED_ROYALTY_TILES = {
 //   { text, all_perte }  → tout le monde perd all_perte
 // ────────────────────────────────────────────────────────────────
 const ACTUALITE_CARDS = [
-  // Bonnes nouvelles pour les détenteurs
-  { text: "Splendides récoltes de blé ! Recevez 7M si vous possédez du blé, sinon 1M.", resource: 'Blé', gain_holder: 7000000, gain_other: 1000000 },
-  { text: "Tension internationale ! Recevez 5M si vous possédez de l'uranium, sinon 1M.", resource: 'Uranium', gain_holder: 5000000, gain_other: 1000000 },
-  { text: "Boom pétrolier mondial ! Recevez 10M si vous possédez du pétrole, sinon 2M.", resource: 'Pétrole', gain_holder: 10000000, gain_other: 2000000 },
-  { text: "Récolte exceptionnelle de riz ! Recevez 8M si vous possédez du riz, sinon 1M.", resource: 'Riz', gain_holder: 8000000, gain_other: 1000000 },
-  { text: "Découverte de gisements de nickel ! Recevez 6M si vous possédez du nickel, sinon 1M.", resource: 'Nickel', gain_holder: 6000000, gain_other: 1000000 },
-  { text: "Essor de la construction automobile ! Recevez 9M si vous la possédez, sinon 2M.", resource: 'Construction automobile', gain_holder: 9000000, gain_other: 2000000 },
-  { text: "Boom du caoutchouc ! Recevez 7M si vous possédez du caoutchouc naturel, sinon 1M.", resource: 'Caoutchouc naturel', gain_holder: 7000000, gain_other: 1000000 },
-  { text: "Récolte de thé exceptionnelle ! Recevez 5M si vous possédez du thé, sinon 1M.", resource: 'Thé', gain_holder: 5000000, gain_other: 1000000 },
-  // Mauvaises nouvelles pour les détenteurs
-  { text: "Surproduction de café ! Cours en chute : recevez 1M si vous possédez du café, sinon 4M.", resource: 'Café', gain_holder: 1000000, gain_other: 4000000 },
-  { text: "Incidents au Zaïre ! Crise du cuivre : recevez 1M si vous possédez du cuivre, sinon 4M.", resource: 'Cuivre', gain_holder: 1000000, gain_other: 4000000 },
-  { text: "Crise de l'acier ! Recevez 1M si vous possédez de l'acier, sinon 2M.", resource: 'Acier', gain_holder: 1000000, gain_other: 2000000 },
-  { text: "Effondrement du cours de l'or ! Recevez 1M si vous possédez de l'or, sinon 3M.", resource: 'Or', gain_holder: 1000000, gain_other: 3000000 },
-  { text: "Grève dans les mines de houille ! Recevez 1M si vous possédez de la houille, sinon 4M.", resource: 'Houille', gain_holder: 1000000, gain_other: 4000000 },
-  { text: "Mauvaise récolte de cacao ! Recevez 1M si vous possédez du cacao, sinon 4M.", resource: 'Cacao', gain_holder: 1000000, gain_other: 4000000 },
-  { text: "Crise du cobalt ! Recevez 1M si vous possédez du cobalt, sinon 3M.", resource: 'Cobalt', gain_holder: 1000000, gain_other: 3000000 },
-  { text: "Crise du sucre mondial ! Recevez 1M si vous possédez du sucre, sinon 3M.", resource: 'Sucre', gain_holder: 1000000, gain_other: 3000000 },
-  // Cartes globales
-  { text: "Krach boursier ! Tous les joueurs perdent 3M.", all_perte: 3000000 },
-  { text: "Fête mondiale ! Tous les joueurs reçoivent 2M.", all_gain: 2000000 },
+  // 1
+  { text: "Une de vos usines brûle. Vous étiez mal assuré. Vous devez payer 1 million pour la rééquiper.", all_perte: 1000000 },
+  // 2
+  { text: "Vous revendez vos terrains d'ici au sud sur lesquels on a découvert un gisement d'uranium. Encaissez 5 millions.", all_gain: 5000000 },
+  // 3
+  { text: "Vous héritez d'un oncle d'Amérique qui a découvert du pétrole dans son champ de maïs. Vous recevez 6 millions.", all_gain: 6000000 },
+  // 4
+  { text: "À la suite d'encombrements sur l'autoroute, vous êtes en retard pour prendre votre avion. Dans votre précipitation, vous avez égaré votre serviette contenant 3 millions. Payez à la banque.", all_perte: 3000000 },
+  // 5
+  { text: "Votre entreprise de plongée sous-marine découvre une galerie antique contenant un important trésor. Cela vous rapporte 3 millions.", all_gain: 3000000 },
+  // 6
+  { text: "Un violent cyclone fait rage dans le sud des États-Unis : des champs de coton et de blé brûlent. Payez 5 millions si vous possédez du coton ou du blé, sinon payez 3 millions.", resources: ['Coton brut', 'Blé'], gain_holder: -5000000, gain_other: -3000000 },
+  // 7
+  { text: "Afflux de capitaux en Europe : l'or s'affaisse. Payez 7 millions si vous possédez de l'or, sinon payez 5 millions.", resource: 'Or', gain_holder: -7000000, gain_other: -5000000 },
+  // 8
+  { text: "\"Extended Dom\" : la BETHLEHEM STEEL et la UNITED STEEL sont bénéficiaires. Recevez 9 millions si vous possédez de l'acier, sinon recevez 7 millions.", resource: 'Acier', gain_holder: 9000000, gain_other: 7000000 },
+  // 9
+  { text: "Vous fêtez vos noces de diamant. Chaque joueur est un ami qui vous donne 1 million.", gain_per_other_player: 1000000 },
+  // 10
+  { text: "Splendides récoltes de blé. Recevez 7 millions si vous en possédez, sinon recevez 5 millions.", resource: 'Blé', gain_holder: 7000000, gain_other: 5000000 },
+  // 11
+  { text: "Surproduction de café : payez 4 millions si vous possédez du café, sinon payez 2 millions.", resource: 'Café', gain_holder: -4000000, gain_other: -2000000 },
+  // 12
+  { text: "Excellente récolte de caoutchouc naturel. Recevez 4 millions si vous possédez du caoutchouc naturel, sinon recevez 2 millions.", resource: 'Caoutchouc naturel', gain_holder: 4000000, gain_other: 2000000 },
+  // 13
+  { text: "Tension internationale : bond en avant de l'extraction des oxydes d'uranium. Recevez 6 millions si vous possédez de l'uranium, sinon recevez 4 millions.", resource: 'Uranium', gain_holder: 6000000, gain_other: 4000000 },
+  // 14
+  { text: "Incidents au Zaïre : les réserves de cuivre du KATANGA sont inexploitées. Payez 6 millions si vous possédez du cuivre, sinon payez 4 millions.", resource: 'Cuivre', gain_holder: -6000000, gain_other: -4000000 },
+  // 15
+  { text: "Grand succès de courses automobiles. Votre marque est toujours en tête. Recevez 6 millions si vous possédez des constructions automobiles, sinon recevez 4 millions.", resource: 'Construction automobile', gain_holder: 6000000, gain_other: 4000000 },
+  // 16
+  { text: "Votre installation d'extraction de minerai de fer ne présentait pas les normes de sécurité exigées. Un accident est survenu. Payez à la banque une amende de 7 millions si vous possédez du fer.", resource: 'Fer', gain_holder: -7000000, gain_other: 0 },
+  // 17
+  { text: "Votre dernier livre est couronné d'un prix littéraire. Le public se l'arrache. Vos droits d'auteur vous rapportent 4 millions.", all_gain: 4000000 },
+  // 18
+  { text: "Un tremblement de terre détruit les chantiers navals de YOKOHAMA et d'OSAKA-KOBE. Payez 5 millions si vous possédez des constructions navales, sinon payez 3 millions.", resource: 'Construction navale', gain_holder: -5000000, gain_other: -3000000 },
 ]
 
 const PLAYER_COLORS = {
@@ -651,6 +666,14 @@ export default function GamePage() {
       let amount = 0
       if (actualiteCard.all_gain) { amount = actualiteCard.all_gain }
       else if (actualiteCard.all_perte) { amount = -actualiteCard.all_perte }
+      else if (actualiteCard.gain_per_other_player) {
+        const activePlayers = players.filter(p => !p.bankrupt)
+        amount = actualiteCard.gain_per_other_player * Math.max(0, activePlayers.length - 1)
+      }
+      else if (actualiteCard.resources) {
+        const has = actualiteCard.resources.some(r => myTitlesNow.some(t => t.production === r))
+        amount = has ? actualiteCard.gain_holder : actualiteCard.gain_other
+      }
       else if (actualiteCard.resource) {
         const has = myTitlesNow.some(t => t.production === actualiteCard.resource)
         amount = has ? actualiteCard.gain_holder : actualiteCard.gain_other
