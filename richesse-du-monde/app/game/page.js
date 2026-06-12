@@ -45,6 +45,15 @@ body { background: #0d0700; color: white; font-family: 'Barlow Condensed', 'Aria
 .card-flip-inner.is-flipped { transform: rotateY(180deg); }
 .card-face { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:4px; overflow:hidden; }
 .card-face-back { transform:rotateY(180deg); background:#1a0a00; border:1px solid #c8962a; display:flex; align-items:center; justify-content:center; padding:5px; }
+@media (max-width: 767px) {
+  .header { padding: 8px 12px; }
+  .header-title { font-size: 17px; letter-spacing: 0.02em; }
+  .roll-button { padding: 14px 20px; font-size: 16px; min-height: 52px; }
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal-box { border-radius: 16px 16px 0 0; max-width: 100%; max-height: 90vh; padding: 20px 16px; }
+  .sidebar { border-left: none; padding: 12px; }
+  input[type=number], input[type=text], select { font-size: 16px !important; }
+}
 `
 
 function GlobalStyles() {
@@ -335,6 +344,8 @@ export default function GamePage() {
   const [showTradeModal, setShowTradeModal] = useState(false)
   const [boardZoom, setBoardZoom] = useState(1)
   const [showMarket, setShowMarket] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [mobileTab, setMobileTab] = useState('board')
 
   const reloadRef = useRef(null)
   reloadRef.current = {
@@ -350,9 +361,26 @@ export default function GamePage() {
   }, [router])
 
   useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (mobile) setBoardZoom(0.45)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
     if (!user) return
     loadOrCreateGame()
   }, [user])
+
+  useEffect(() => {
+    if (isMobile && game?.current_player_id && String(game.current_player_id) === String(user?.id)) {
+      setMobileTab('actions')
+    }
+  }, [game?.current_player_id, isMobile])
 
   useEffect(() => {
     if (!game?.id) return
@@ -861,21 +889,21 @@ export default function GamePage() {
     <div style={{ minHeight:'100vh', background:'#0d0700', color:'white', fontFamily:"'Barlow Condensed',Arial,sans-serif" }}>
       <GlobalStyles />
       <div className="header">
-        <h1 className="header-title">🌍 Richesses du Monde</h1>
-        <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
-          <span style={{ color:'#aaa', fontSize:'14px' }}>Connecté : <strong style={{ color:'#c8962a' }}>{user?.username}</strong></span>
-          <button onClick={() => setShowMarket(true)} style={{ padding:'6px 14px', background:'#1a4a6b', border:'1px solid #2980b9', borderRadius:'6px', color:'#3498db', cursor:'pointer', fontSize:'13px', fontWeight:'600' }}>📦 Ressources</button>
+        <h1 className="header-title">🌍 {isMobile ? 'Richesses' : 'Richesses du Monde'}</h1>
+        <div style={{ display:'flex', gap: isMobile ? '6px' : '12px', alignItems:'center' }}>
+          {!isMobile && <span style={{ color:'#aaa', fontSize:'14px' }}>Connecté : <strong style={{ color:'#c8962a' }}>{user?.username}</strong></span>}
+          <button onClick={() => setShowMarket(true)} style={{ padding: isMobile ? '6px 10px' : '6px 14px', background:'#1a4a6b', border:'1px solid #2980b9', borderRadius:'6px', color:'#3498db', cursor:'pointer', fontSize:'13px', fontWeight:'600' }}>📦 {!isMobile && 'Ressources'}</button>
           {user?.role === 'admin' && (
-            <button onClick={resetGame} style={{ padding:'6px 14px', background:'#c0392b', border:'none', borderRadius:'6px', color:'white', cursor:'pointer', fontSize:'13px' }}>🔄 Reset</button>
+            <button onClick={resetGame} style={{ padding: isMobile ? '6px 10px' : '6px 14px', background:'#c0392b', border:'none', borderRadius:'6px', color:'white', cursor:'pointer', fontSize:'13px' }}>🔄</button>
           )}
-          <button onClick={logout} style={{ padding:'6px 14px', background:'transparent', border:'1px solid #555', borderRadius:'6px', color:'#aaa', cursor:'pointer', fontSize:'13px' }}>Déconnexion</button>
+          <button onClick={logout} style={{ padding: isMobile ? '6px 10px' : '6px 14px', background:'transparent', border:'1px solid #555', borderRadius:'6px', color:'#aaa', cursor:'pointer', fontSize:'13px' }}>{isMobile ? '↩' : 'Déconnexion'}</button>
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'260px 1fr 240px', minHeight:'calc(100vh - 60px)' }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '260px 1fr 240px', minHeight: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 60px)' }}>
 
         {/* PANNEAU GAUCHE */}
-        <div style={{ background:'#0d0500', borderRight:'2px solid #2a1a00', padding:'16px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'12px' }}>
+        <div style={{ background:'#0d0500', borderRight: isMobile ? 'none' : '2px solid #2a1a00', padding:'16px', overflowY:'auto', display: (!isMobile || mobileTab === 'actions') ? 'flex' : 'none', flexDirection:'column', gap:'12px' }}>
 
           {phase === 'waiting' && (
             <div style={{ textAlign:'center', padding:'20px 10px' }}>
@@ -1006,14 +1034,14 @@ export default function GamePage() {
         </div>
 
         {/* PLATEAU CENTRAL */}
-        <div style={{ display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
+        <div style={{ display: (!isMobile || mobileTab === 'board') ? 'flex' : 'none', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'6px 12px 0', flexShrink:0 }}>
-            <button onClick={() => setBoardZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))} style={{ width:28, height:28, background:'#1a0a00', border:'1px solid #c8962a55', borderRadius:'4px', color:'#c8962a', cursor:'pointer', fontSize:'16px', lineHeight:1 }}>−</button>
+            <button onClick={() => setBoardZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))} style={{ width:32, height:32, background:'#1a0a00', border:'1px solid #c8962a55', borderRadius:'6px', color:'#c8962a', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>−</button>
             <span style={{ color:'#555', fontSize:'12px', minWidth:'36px', textAlign:'center' }}>{Math.round(boardZoom * 100)}%</span>
-            <button onClick={() => setBoardZoom(z => Math.min(1.5, +(z + 0.1).toFixed(1)))} style={{ width:28, height:28, background:'#1a0a00', border:'1px solid #c8962a55', borderRadius:'4px', color:'#c8962a', cursor:'pointer', fontSize:'16px', lineHeight:1 }}>+</button>
-            <button onClick={() => setBoardZoom(1)} style={{ padding:'0 8px', height:28, background:'#1a0a00', border:'1px solid #2a1a00', borderRadius:'4px', color:'#555', cursor:'pointer', fontSize:'11px' }}>100%</button>
+            <button onClick={() => setBoardZoom(z => Math.min(1.5, +(z + 0.1).toFixed(1)))} style={{ width:32, height:32, background:'#1a0a00', border:'1px solid #c8962a55', borderRadius:'6px', color:'#c8962a', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>+</button>
+            {!isMobile && <button onClick={() => setBoardZoom(1)} style={{ padding:'0 8px', height:28, background:'#1a0a00', border:'1px solid #2a1a00', borderRadius:'4px', color:'#555', cursor:'pointer', fontSize:'11px' }}>100%</button>}
           </div>
-          <div style={{ padding:'12px', overflow:'auto', flex:1 }}>
+          <div style={{ padding: isMobile ? '8px' : '12px', overflow:'auto', flex:1 }}>
           <div style={{ zoom: boardZoom, display:'inline-block' }}>
           {(phase === 'playing' || phase === 'finished') && (
             <Board
@@ -1039,7 +1067,7 @@ export default function GamePage() {
         </div>
 
         {/* SIDEBAR DROITE */}
-        <div className="sidebar">
+        <div className="sidebar" style={{ display: (!isMobile || mobileTab === 'players') ? 'block' : 'none' }}>
           <h3 style={{ color:'#c8962a', margin:'0 0 12px', fontSize:'16px' }}>👥 Joueurs</h3>
           {players.map(p => (
             <div key={p.id} style={{ padding:'10px', marginBottom:'8px', background:'rgba(255,255,255,0.03)', border:`1px solid ${game?.current_player_id===p.user_id?'#c8962a':'#2a1a00'}`, borderRadius:'8px', opacity:p.bankrupt?0.4:1 }}>
@@ -1063,6 +1091,25 @@ export default function GamePage() {
           </div>
         </div>
       </div>
+
+      {/* BARRE DE NAVIGATION MOBILE */}
+      {isMobile && (
+        <div style={{ position:'fixed', bottom:0, left:0, right:0, height:'56px', background:'#1a0800', borderTop:'2px solid #c8962a', display:'flex', zIndex:500 }}>
+          {[
+            { id:'actions', icon: isMyTurn() && !diceResult && !modal ? '🎲' : '⚙️', label:'Actions' },
+            { id:'board',   icon:'🗺️', label:'Plateau' },
+            { id:'players', icon:'👥', label:'Joueurs' },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setMobileTab(tab.id)} style={{ flex:1, background: mobileTab===tab.id ? 'rgba(200,150,42,0.18)' : 'transparent', border:'none', color: mobileTab===tab.id ? '#c8962a' : '#666', fontSize:'11px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'2px', position:'relative' }}>
+              <span style={{ fontSize:'20px', lineHeight:1 }}>{tab.icon}</span>
+              {tab.label}
+              {tab.id === 'actions' && isMyTurn() && !diceResult && !modal && mobileTab !== 'actions' && (
+                <span style={{ position:'absolute', top:'4px', right:'calc(50% - 18px)', width:'8px', height:'8px', background:'#e74c3c', borderRadius:'50%' }}/>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* OVERLAY */}
       <PendingActionOverlay
