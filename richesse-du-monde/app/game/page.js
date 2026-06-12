@@ -1558,6 +1558,33 @@ function TradeOverlay({ proposal, players, myPlayer, user, onAccept, onDecline, 
 }
 
 // ============================================================
+// CARTE ACTUALITÉ
+// ============================================================
+function ActualiteCard({ card }) {
+  if (!card) return null
+  const amt = card.computed_amount || 0
+  const amtText = (amt >= 0 ? '+' : '') + amt.toLocaleString('fr-FR') + ' F'
+  const amtColor = amt >= 0 ? '#1a7a1a' : '#cc0000'
+  return (
+    <div style={{ position:'relative', width:240, height:316, margin:'0 auto 16px', flexShrink:0 }}>
+      <img src="/face_actualite.png" alt="Actualité" style={{ width:'100%', height:'100%', objectFit:'fill', display:'block' }} />
+      {/* Zone titre */}
+      <div style={{ position:'absolute', top:'5%', left:'9%', right:'9%', height:'16%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:20, color:'#cc0000', letterSpacing:'0.12em', textTransform:'uppercase' }}>Actualité</span>
+      </div>
+      {/* Zone texte principal */}
+      <div style={{ position:'absolute', top:'23%', left:'9%', right:'9%', height:'46%', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+        <p style={{ margin:0, fontSize:10.5, color:'#1a0800', textAlign:'center', lineHeight:1.55, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:600 }}>{card.text}</p>
+      </div>
+      {/* Zone montant */}
+      <div style={{ position:'absolute', top:'72%', left:'9%', right:'9%', height:'20%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:18, color:amtColor }}>{amtText}</span>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
 // OVERLAY
 // ============================================================
 function PendingActionOverlay({ pendingAction, currentUserId, onConfirm, hasJoker }) {
@@ -1567,18 +1594,32 @@ function PendingActionOverlay({ pendingAction, currentUserId, onConfirm, hasJoke
   const isMyAction = pendingAction.player_id === currentUserId
   const color = PLAYER_COLORS[pendingAction.player_color] || '#c8962a'
   const hasRoyalties = pendingAction.data?.royaltyPayments?.length > 0
+  const isActualite = pendingAction.data?.landingType === 'actualite'
+  const actualiteCard = pendingAction.data?.actualiteCard
+
+  // Lignes hors "Carte Actualité" (on remplace ce texte par le visuel de la carte)
+  const filteredLines = isActualite
+    ? pendingAction.lines.filter(l => !l.startsWith('Carte Actualité'))
+    : pendingAction.lines
+
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-      <div style={{ background:'#1a0a00', border:`2px solid ${color}`, borderRadius:'16px', padding:'32px 36px', maxWidth:'540px', width:'100%', textAlign:'center', boxShadow:`0 0 40px ${color}44` }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'20px' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px', overflowY:'auto' }}>
+      <div style={{ background:'#1a0a00', border:`2px solid ${color}`, borderRadius:'16px', padding:'28px 32px', maxWidth:'520px', width:'100%', textAlign:'center', boxShadow:`0 0 40px ${color}44` }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'16px' }}>
           <div style={{ width:'14px', height:'14px', borderRadius:'50%', background:color }}/>
           <span style={{ color, fontSize:'20px', fontWeight:700, fontFamily:"'Oswald',sans-serif" }}>{pendingAction.player_name}</span>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'28px' }}>
-          {pendingAction.lines.map((line, i) => (
-            <p key={i} style={{ margin:0, color:i===0?'white':'#c8962a', fontSize:i===0?'17px':'15px', fontWeight:i===0?700:400, lineHeight:1.4, borderTop:i>0?'1px solid #2a1a00':'none', paddingTop:i>0?'10px':0 }}>{line}</p>
-          ))}
-        </div>
+
+        {isActualite && <ActualiteCard card={actualiteCard} />}
+
+        {filteredLines.length > 0 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'24px' }}>
+            {filteredLines.map((line, i) => (
+              <p key={i} style={{ margin:0, color:i===0?'white':'#c8962a', fontSize:i===0?'17px':'15px', fontWeight:i===0?700:400, lineHeight:1.4, borderTop:i>0?'1px solid #2a1a00':'none', paddingTop:i>0?'10px':0 }}>{line}</p>
+            ))}
+          </div>
+        )}
+
         {isMyAction && hasJoker && hasRoyalties && (
           <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'20px', cursor:'pointer', color:'#9b59b6', fontSize:'15px', fontWeight:'600' }}>
             <input type="checkbox" checked={useJoker} onChange={e => setUseJoker(e.target.checked)} style={{ width:18, height:18, cursor:'pointer' }} />
