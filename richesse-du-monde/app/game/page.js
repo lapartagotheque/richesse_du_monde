@@ -1569,15 +1569,15 @@ function ActualiteCard({ card }) {
     <div style={{ position:'relative', width:240, height:316, margin:'0 auto 16px', flexShrink:0 }}>
       <img src="/face_actualite.png" alt="Actualité" style={{ width:'100%', height:'100%', objectFit:'fill', display:'block' }} />
       {/* Zone titre */}
-      <div style={{ position:'absolute', top:'5%', left:'9%', right:'9%', height:'16%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:20, color:'#cc0000', letterSpacing:'0.12em', textTransform:'uppercase' }}>Actualité</span>
+      <div style={{ position:'absolute', top:'6%', left:'9%', right:'9%', height:'15%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:18, color:'#cc0000', letterSpacing:'0.12em', textTransform:'uppercase' }}>Actualité</span>
       </div>
       {/* Zone texte principal */}
-      <div style={{ position:'absolute', top:'23%', left:'9%', right:'9%', height:'46%', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-        <p style={{ margin:0, fontSize:10.5, color:'#1a0800', textAlign:'center', lineHeight:1.55, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:600 }}>{card.text}</p>
+      <div style={{ position:'absolute', top:'24%', left:'10%', right:'10%', height:'44%', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+        <p style={{ margin:0, fontSize:11, color:'#cc0000', textAlign:'center', lineHeight:1.55, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
       </div>
       {/* Zone montant */}
-      <div style={{ position:'absolute', top:'72%', left:'9%', right:'9%', height:'20%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ position:'absolute', top:'71%', left:'9%', right:'9%', height:'21%', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:18, color:amtColor }}>{amtText}</span>
       </div>
     </div>
