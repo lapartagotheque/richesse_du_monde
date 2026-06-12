@@ -1568,28 +1568,17 @@ function ActualiteCard({ card }) {
   return (
     <div style={{ position:'relative', width:240, height:316, margin:'0 auto 16px', flexShrink:0 }}>
       <img src="/face_actualite.png" alt="Actualité" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'fill' }} />
-      {/* Superposition flex-colonne calée sur les 3 zones du PNG */}
-      <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
-        {/* espace avant zone 1 */}
-        <div style={{ flex:'0 0 7%' }}/>
-        {/* zone 1 : ~26% de hauteur */}
-        <div style={{ flex:'0 0 26%', display:'flex', alignItems:'center', justifyContent:'center', paddingLeft:'10%', paddingRight:'10%' }}>
-          <span style={{ display:'block', width:'100%', textAlign:'center', fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:15, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
-        </div>
-        {/* écart zone 1→2 */}
-        <div style={{ flex:'0 0 2.5%' }}/>
-        {/* zone 2 : ~38% de hauteur */}
-        <div style={{ flex:'0 0 38%', display:'flex', alignItems:'center', justifyContent:'center', paddingLeft:'14%', paddingRight:'14%' }}>
-          <p style={{ margin:0, padding:0, width:'100%', fontSize:11.5, color:'#cc0000', textAlign:'center', lineHeight:1.55, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
-        </div>
-        {/* écart zone 2→3 */}
-        <div style={{ flex:'0 0 2.5%' }}/>
-        {/* zone 3 : ~22% de hauteur */}
-        <div style={{ flex:'0 0 22%', display:'flex', alignItems:'center', justifyContent:'center', paddingLeft:'10%', paddingRight:'10%' }}>
-          <span style={{ display:'block', width:'100%', textAlign:'center', fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor }}>{amtText}</span>
-        </div>
-        {/* espace bas */}
-        <div style={{ flex:1 }}/>
+      {/* ACTUALITÉ — centre de zone 1 ≈ 14% */}
+      <div style={{ position:'absolute', top:'14%', left:'10%', right:'10%', transform:'translateY(-50%)', textAlign:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:15, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
+      </div>
+      {/* Texte — centre de zone 2 ≈ 50%, marges larges pour ne pas toucher les bords */}
+      <div style={{ position:'absolute', top:'50%', left:'16%', right:'16%', transform:'translateY(-50%)' }}>
+        <p style={{ margin:0, fontSize:11.5, color:'#cc0000', textAlign:'center', lineHeight:1.6, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
+      </div>
+      {/* Montant — centre de zone 3 ≈ 84% */}
+      <div style={{ position:'absolute', top:'84%', left:'10%', right:'10%', transform:'translateY(-50%)', textAlign:'center' }}>
+        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor }}>{amtText}</span>
       </div>
     </div>
   )
