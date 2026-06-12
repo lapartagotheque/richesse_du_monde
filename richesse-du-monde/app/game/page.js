@@ -1567,18 +1567,29 @@ function ActualiteCard({ card }) {
   const amtColor = amt >= 0 ? '#1a7a1a' : '#cc0000'
   return (
     <div style={{ position:'relative', width:240, height:316, margin:'0 auto 16px', flexShrink:0 }}>
-      <img src="/face_actualite.png" alt="Actualité" style={{ width:'100%', height:'100%', objectFit:'fill', display:'block' }} />
-      {/* Zone titre (zone 1 intérieur : ~6% à 27%) */}
-      <div style={{ position:'absolute', top:'6%', left:'9%', right:'9%', height:'21%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
-      </div>
-      {/* Zone texte principal (zone 2 intérieur : ~30% à 71%) */}
-      <div style={{ position:'absolute', top:'30%', left:'11%', right:'11%', height:'41%', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-        <p style={{ margin:0, padding:0, width:'100%', fontSize:12, color:'#cc0000', textAlign:'center', lineHeight:1.5, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, wordBreak:'break-word', hyphens:'auto' }}>{card.text}</p>
-      </div>
-      {/* Zone montant (zone 3 intérieur : ~76% à 96%) */}
-      <div style={{ position:'absolute', top:'76%', left:'9%', right:'9%', height:'20%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:17, color:amtColor }}>{amtText}</span>
+      <img src="/face_actualite.png" alt="Actualité" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'fill' }} />
+      {/* Superposition flex-colonne calée sur les 3 zones du PNG */}
+      <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
+        {/* espace avant zone 1 */}
+        <div style={{ flex:'0 0 6.5%' }}/>
+        {/* zone 1 : ~15.4% de hauteur */}
+        <div style={{ flex:'0 0 15.4%', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 10%' }}>
+          <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:15, color:'#cc0000', letterSpacing:'0.1em', textTransform:'uppercase' }}>Actualité</span>
+        </div>
+        {/* écart entre zone 1 et zone 2 */}
+        <div style={{ flex:'0 0 4.2%' }}/>
+        {/* zone 2 : ~42% de hauteur */}
+        <div style={{ flex:'0 0 42%', display:'flex', alignItems:'center', justifyContent:'center', padding:'2% 13%' }}>
+          <p style={{ margin:0, padding:0, fontSize:11.5, color:'#cc0000', textAlign:'center', lineHeight:1.55, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700 }}>{card.text}</p>
+        </div>
+        {/* écart entre zone 2 et zone 3 */}
+        <div style={{ flex:'0 0 4.1%' }}/>
+        {/* zone 3 : ~20.7% de hauteur */}
+        <div style={{ flex:'0 0 20.7%', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 10%' }}>
+          <span style={{ fontFamily:"'Oswald',sans-serif", fontWeight:800, fontSize:16, color:amtColor }}>{amtText}</span>
+        </div>
+        {/* espace bas */}
+        <div style={{ flex:1 }}/>
       </div>
     </div>
   )
