@@ -116,7 +116,7 @@ function getRoyaltyAmount(production, pct) {
 }
 
 // ============================================================
-// PLATEAU 11x9 — ordre validé avec toi
+// PLATEAU 
 // ============================================================
 const NCOLS = 11
 const NROWS = 9
@@ -262,20 +262,6 @@ const FIXED_ROYALTY_TILES = {
 
 
 // ── CARTES ACTUALITÉ ────────────────────────────────────────────
-// Deux formats possibles :
-//
-// Format ressource :
-//   { text, resource, gain_holder, gain_other }
-//   • resource    : nom exact de la ressource (doit correspondre à PRODUCTIONS)
-//   • gain_holder : montant reçu si le joueur POSSÈDE la ressource  (toujours positif)
-//   • gain_other  : montant reçu si le joueur NE possède PAS la ressource (toujours positif)
-//   → Bonne nouvelle pour le détenteur  : gain_holder > gain_other
-//   → Mauvaise nouvelle pour le détenteur : gain_holder < gain_other
-//
-// Format global :
-//   { text, all_gain }   → tout le monde reçoit all_gain
-//   { text, all_perte }  → tout le monde perd all_perte
-// ────────────────────────────────────────────────────────────────
 const ACTUALITE_CARDS = [
   // 1
   { text: "Une de vos usines brûle. Vous étiez mal assuré. Vous devez payer 1 million pour la rééquiper.", all_perte: 1000000 },
@@ -1302,13 +1288,13 @@ function BankruptcyOverlay({ bankruptcy, players, myPlayer, titles, user, onForf
           {/* Échange */}
           <button onClick={() => setShowTrade(true)}
             style={{ width:'100%', padding:'12px', marginBottom:'8px', background:'#0d2a1a', border:'2px solid #27ae6055', borderRadius:'8px', color:'#27ae60', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
-            🤝 Proposer un échange
+              échange
           </button>
 
           {/* Vendre ressources */}
           <button onClick={() => setShowSell(!showSell)}
             style={{ width:'100%', padding:'12px', marginBottom:'8px', background:'#1a1000', border:`2px solid ${showSell ? '#c8962a99' : '#c8962a44'}`, borderRadius:'8px', color:'#c8962a', cursor:'pointer', fontSize:'14px', fontFamily:"'Oswald',sans-serif", fontWeight:'600' }}>
-            💰 Vendre des ressources à la banque (50% du prix) {showSell ? '▲' : '▼'}
+             Vendre des ressources à la banque (50% du prix) {showSell ? '▲' : '▼'}
           </button>
 
           {showSell && (
@@ -1346,7 +1332,7 @@ function BankruptcyOverlay({ bankruptcy, players, myPlayer, titles, user, onForf
           {currentMoney >= bankruptcy.debt && (
             <button onClick={onSurvive}
               style={{ width:'100%', padding:'12px', marginBottom:'8px', background:'#27ae60', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', fontSize:'15px', fontFamily:"'Oswald',sans-serif", fontWeight:'700' }}>
-              ✅ Payer et continuer ({formatMoney(bankruptcy.debt)})
+               Payer et continuer ({formatMoney(bankruptcy.debt)})
             </button>
           )}
 
@@ -2067,6 +2053,7 @@ const AVAILABLE_TITLES = [
 function Modal({ modal, myPlayer, titles, players, user, onBuy, onActualite, onJoker, onClose, formatMoney }) {
   const [selected, setSelected] = useState([])
   const [viewPlayerId, setViewPlayerId] = useState(String(user?.id ?? ''))
+  const [search, setSearch] = useState('')
   const myTitles = titles.filter(t => t.user_id === user?.id)
   const totalSelected = selected.reduce((s, t) => s + t.price, 0)
   const canAfford = myPlayer && totalSelected <= myPlayer.money
@@ -2110,10 +2097,17 @@ function Modal({ modal, myPlayer, titles, players, user, onBuy, onActualite, onJ
         <div style={{ display:'grid', gridTemplateColumns:'1fr 280px', gap:'16px', alignItems:'start' }}>
           {/* Titres disponibles */}
           <div>
+            <input
+              type="text"
+              placeholder="Rechercher une ressource..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ width:'100%', boxSizing:'border-box', padding:'7px 10px', marginBottom:'10px', background:'#1a0a00', border:'1px solid #555', borderRadius:'6px', color:'white', fontSize:'13px', outline:'none' }}
+            />
             {availableForCase.length === 0
               ? <p style={{ color:'#e74c3c' }}>Aucun titre disponible</p>
-              : <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', maxHeight:'320px', overflowY:'auto' }}>
-                  {availableForCase.map((t, i) => {
+              : <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', maxHeight:'300px', overflowY:'auto' }}>
+                  {availableForCase.filter(t => t.production.toLowerCase().includes(search.toLowerCase()) || t.region.toLowerCase().includes(search.toLowerCase())).map((t, i) => {
                     const isSelected = !!selected.find(s => s.production + s.region === t.production + t.region)
                     return (
                       <div key={i} onClick={() => toggleTitle(t)} style={{ padding:'10px', background:isSelected?'rgba(200,150,42,0.2)':'rgba(255,255,255,0.04)', border:`1px solid ${isSelected?'#c8962a':'#333'}`, borderRadius:'8px', cursor:'pointer', fontSize:'12px' }}>
